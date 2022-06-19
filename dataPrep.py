@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-08 13:35:05
-LastEditTime: 2022-05-24 13:59:28
+LastEditTime: 2022-06-18 12:17:31
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -199,13 +199,13 @@ def multi_insert(df):
     '''
     多重插补的方法对缺失数据值进行填补
     '''
-    insertDF=pd.DataFrame
+    insertDF=pd.DataFrame()
     return insertDF 
 
 
-def str2encoding(df:pd.DataFrame,catDict=False,logInfo=False)->pd.DataFrame:
+def str2encoding_auto(df:pd.DataFrame,catDict=False,logInfo=False)->pd.DataFrame:
     '''
-    description: 将object编码转变成0123, 需要在对数据进行清洗之后才能进行引用
+    description: 自动识别文本特征, 并将object编码转变成0123, 需要在对数据进行清洗之后才能进行引用
     param {pd} df: 目标数据集, 应该包含有结果变量
     param {None|dict} catDict: 传入有 固定编码 或者 顺序 的特征的编码,函数中采用构造字典, 
                                函数内采用df.map(dict)方式进行映射, 字典中缺失的值将被赋值为None!
@@ -223,12 +223,12 @@ def str2encoding(df:pd.DataFrame,catDict=False,logInfo=False)->pd.DataFrame:
     print('对这些分类变量特征进行了编码：',catList)
     if bool(catDict): # 从object列表中删除，并且对数据进行编码
         for item in catDict.keys():
-            catList.remove(item) #删除传入特定编码的特征 
+            catList.remove(item) #删除传入的自定义特征进行编码 
             myDict = dict(zip(catDict[item],range(len(catDict[item])))) # 构造成值:编码字典
             # 编码
             df[item] = df[item].map(myDict).copy()
             codeList.append(dict(zip(myDict.values(),myDict.keys()))) #将编码:值字典放入
-            # 对剩余内容的编码
+        # 对剩余内容的编码
         ode = OrdinalEncoder().fit(df[catList])
         X = ode.transform(df[catList])
         xDF = pd.DataFrame(X,columns=catList,index=df.index)
@@ -258,4 +258,30 @@ def str2encoding(df:pd.DataFrame,catDict=False,logInfo=False)->pd.DataFrame:
         codeDF = pd.DataFrame(codeList,index=catList).reset_index().rename(columns={'index':'feature'})
         if bool(logInfo):
             save_csv(codeDF,logInfo,suffix='encoding',fileName=True)
+            save_csv(xDF,logInfo,suffix='numeric',fileName=True)
         return xDF,codeDF
+
+def str2encoding(df:pd.DataFrame,catFeature:list,numFeature:list,logInfo=False)->pd.DataFrame:
+    '''
+     description: 不会自动识别文本特征, 将对指定列返回编码表以及编码后的df
+    '''
+    from sklearn.preprocessing import OrdinalEncoder
+
+#     mutiStr = pd.get_dummies(df[mutiFeature].astype('category'))
+
+    ode = OrdinalEncoder().fit(df[catFeature])
+    X = ode.transform(df[catFeature])
+    XDF = pd.DataFrame(X,columns=catFeature)
+    # dummyDF = pd.concat([XDF,mutiStr],axis=1)
+    df = pd.concat([df[numFeature],XDF],axis=1)
+    
+    encodingDF = pd.DataFrame()
+    for i in ode.categories_:
+        encodingDF = pd.concat([encodingDF,pd.DataFrame(i)],axis=1)
+    encodingDF.columns=catFeature
+    encodingDF = encodingDF.T.reset_index(drop=False).rename(columns={'index':'feature'})
+    
+    if bool(logInfo):
+        save_csv(encodingDF.T,logInfo,suffix='encoding',fileName=True)
+        
+    return df,encodingDF

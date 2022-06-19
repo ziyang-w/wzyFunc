@@ -15,7 +15,7 @@ import calPlot as cp
 
 cp.set_plot_chinese()
 
-def plot_hist(df,tdAnova,log_path):
+def plot_hist(df,tdAnova,log_path, suffix=''):
     '''
     循环绘制单变量的直方图
     df:数据集
@@ -23,7 +23,7 @@ def plot_hist(df,tdAnova,log_path):
     log_path: 日志路径, 将图片保存在对应的日志路径下
     # sns.displot(data=df,x=tdAnova[0],kind = 'hist',kde=True,bins=24)
     '''
-    plotType='hist'
+    plotType='hist'+suffix
     if not os.path.exists(os.path.join(log_path,'plot',plotType)):
         os.makedirs(os.path.join(log_path,'plot',plotType))
     plot_path = os.path.join(log_path,'plot',plotType)
@@ -32,8 +32,9 @@ def plot_hist(df,tdAnova,log_path):
         sns.displot(data=df,x=h,kind = 'hist',kde=True,bins=24)
         plt.savefig(os.path.join(plot_path,'%s_%s.pdf'%(plotType,h)),dpi=200)
         plt.close() 
+    print('plot save in {}'.format(plot_path))
 
-def plot_classHist(df,tdAnova,tdChi,log_path):
+def plot_classHist(df,tdAnova,tdChi,log_path,suffix=''):
     '''
     循环绘制单变量的直方图
     df:数据集
@@ -41,8 +42,8 @@ def plot_classHist(df,tdAnova,tdChi,log_path):
     tdChi: 传入分类列表
     log_path: 日志路径, 将图片保存在对应的日志路径下
     # sns.displot(data=df,x=tdAnova[0],kind = 'hist',kde=True,bins=24)
-    '''
-    plotType='classHist'
+    '''  
+    plotType='classHist'+suffix  
     if not os.path.exists(os.path.join(log_path,'plot',plotType)):
         os.makedirs(os.path.join(log_path,'plot',plotType))
     plot_path = os.path.join(log_path,'plot',plotType)
@@ -52,8 +53,9 @@ def plot_classHist(df,tdAnova,tdChi,log_path):
             sns.displot(data=df,hue=cls,x=ydata,kind='hist',kde=True)
             plt.savefig(os.path.join(plot_path,'%s_%s_%s.pdf'%(plotType,ydata,cls)),dpi=200)
             plt.close()
+    print('plot save in {}'.format(plot_path))
 
-def plot_joint(df,tdAnova,log_path):
+def plot_joint(df,tdAnova,log_path, suffix=''):
     '''
     循环绘制两个变量的联合直方图
     df:数据集(连续性变量)
@@ -61,7 +63,7 @@ def plot_joint(df,tdAnova,log_path):
     log_path: 日志路径, 将图片保存在对应的日志路径下
     # sns.jointplot(data=df,x=['var1'],y=['var2'],kind='hex')
     '''
-    plotType='joint'
+    plotType='joint'+suffix
     if not os.path.exists(os.path.join(log_path,'plot',plotType)):
         os.makedirs(os.path.join(log_path,'plot',plotType))
     plot_path = os.path.join(log_path,'plot',plotType)
@@ -71,8 +73,9 @@ def plot_joint(df,tdAnova,log_path):
         sns.jointplot(data=df,x=item[0],y=item[1],kind='hex')
         plt.savefig(os.path.join(plot_path,'%s_%s_%s.pdf'%(plotType,item[0],item[1])),dpi=200)
         plt.close()
+    print('plot save in {}'.format(plot_path))
 
-def plot_count(df,tdChi,tr,log_path):
+def plot_count(df,tdChi,tr,log_path, suffix=''):
     '''
     循环绘制两个变量的联合直方图
     df:数据集(分类数据, 文本, 以便于hue中以字符显示)
@@ -81,7 +84,7 @@ def plot_count(df,tdChi,tr,log_path):
     log_path: 日志路径, 将图片保存在对应的日志路径下
     # sns.jointplot(data=df,x=['var1'],y=['var2'],kind='hex')
     '''
-    plotType='count'
+    plotType='count'+suffix
     if not os.path.exists(os.path.join(log_path,'plot',plotType)):
         os.makedirs(os.path.join(log_path,'plot',plotType))
     plot_path = os.path.join(log_path,'plot',plotType)
@@ -91,8 +94,9 @@ def plot_count(df,tdChi,tr,log_path):
             sns.catplot(data=df,hue=cls,x=targetResult,kind='count')
             plt.savefig(os.path.join(plot_path,'%s_%s_%s.pdf'%(plotType,targetResult,cls)),dpi=200)
             plt.close()
+    print('plot save in {}'.format(plot_path))
 
-def plot_violin(df,tdAnova,tr,log_path,tdChi=False):
+def plot_violin(df,tdAnova,tr,log_path,suffix='',tdChi=False):
     '''
     循环绘制两个变量的联合直方图
     df:数据集(分类数据, 文本, 以便于hue中以字符显示)
@@ -102,9 +106,8 @@ def plot_violin(df,tdAnova,tr,log_path,tdChi=False):
     log_path: 日志路径, 将图片保存在对应的日志路径下
     # sns.jointplot(data=df,x=['var1'],y=['var2'],kind='hex')
     '''
-
     if bool(tdChi):  # 如果需要分类的话,给tdChi传入分类列表, 此时bool(tdChi)=true
-        plotType='classViolin'
+        plotType='classViolin'+suffix
         if not os.path.exists(os.path.join(log_path,'plot',plotType)):
             os.makedirs(os.path.join(log_path,'plot',plotType))
         plot_path = os.path.join(log_path,'plot',plotType) 
@@ -112,24 +115,26 @@ def plot_violin(df,tdAnova,tr,log_path,tdChi=False):
         for targetResult in tqdm(tr):
             for cls in tdChi:
                 for ydata in tdAnova:
-                    sns.catplot(data=df,hue=cls,x=targetResult,y=ydata,kind='violin')
+                    sns.catplot(data=df,hue=cls,x=targetResult,y=ydata,kind='violin',palette="pastel")
                     plt.savefig(os.path.join(plot_path,'%s_%s_%s_%s.pdf'%(plotType,targetResult,ydata,cls)),dpi=200)
                     plt.close() # 很重要，不然会导致内存泄漏
     else:
-        plotType='violin'
+        plotType='violin'+suffix
         if not os.path.exists(os.path.join(log_path,'plot',plotType)):
             os.makedirs(os.path.join(log_path,'plot',plotType))
         plot_path = os.path.join(log_path,'plot',plotType)
 
         for targetResult in tqdm(tr):
             for ydata in tdAnova:
-                sns.catplot(data=df,hue=cls,x=targetResult,y=ydata,kind='violin')
+                sns.catplot(data=df,hue=cls,x=targetResult,y=ydata,kind='violin',palette="pastel")
                 plt.savefig(os.path.join(plot_path,'%s_%s_%s.pdf'%(plotType,targetResult,ydata)),dpi=200)
                 plt.close() # 很重要，不然会导致内存泄漏
+    print('plot save in {}'.format(plot_path))
 
-def plot_ratio_heatmap(df,tdAnova,tr,log_path,sigma=3):
+def plot_ratio_heatmap(df,tdAnova,tr,log_info,sigma=3,suffix=''):
     from itertools import combinations
     from calPlot import ratio_heatmap
     
     for item in tqdm(combinations(tdAnova,2)):
-        ratio_heatmap(df,y=item[0],x=item[1],tr=tr,bins='auto',log_path=log_path,simga=sigma)
+        ratio_heatmap(df,y=item[0],x=item[1],tr=tr,bins='auto',log_info=log_info,sigma=sigma)
+    print('plot save in {}'.format(os.path.join(log_info['logPath'],'plot','heatmap'+suffix)))
