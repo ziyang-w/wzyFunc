@@ -3,7 +3,7 @@ Descripttion: 保存评估机器学习模型的效果
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-18 22:15:18
-LastEditTime: 2022-05-24 13:13:38
+LastEditTime: 2022-06-22 11:22:38
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 import pandas as pd
@@ -28,7 +28,7 @@ def PRF1(ytest:np.array, ypre:np.array, yprob:np.array,threshold=0.5)->dict:
     return prf1Dict: {'A','P(PPV)','R(Sen)(TPR)','Spec(TNR)','F1','AUC','YI','threshold'}
     '''
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, \
-        roc_auc_score, confusion_matrix as CM
+        roc_auc_score, average_precision_score, confusion_matrix as CM
     cm={}
     if threshold == 0.5:
         cm['A']= accuracy_score(ytest, ypre)
@@ -38,6 +38,7 @@ def PRF1(ytest:np.array, ypre:np.array, yprob:np.array,threshold=0.5)->dict:
         cm['Spec(TNR)'] = cmTemp[1,1]/cmTemp[1,:].sum() #TNR
         cm['F1']= f1_score(ytest, ypre)
         cm['AUC'] = roc_auc_score(ytest, yprob)
+        cm['AUPR'] = average_precision_score(ytest, yprob)
         cm['YI'] = cm['R(Sen)(TPR)'] + cm['Spec(TNR)'] -1
         cm['threshold'] = threshold
         return  cm
@@ -49,6 +50,7 @@ def PRF1(ytest:np.array, ypre:np.array, yprob:np.array,threshold=0.5)->dict:
         cm['Spec(TNR)'] = cmTemp[1,1]/cmTemp[1,:].sum() #TNR
         cm['F1'] = f1_score(ytest, [1 if x > threshold else 0 for x in yprob])
         cm['AUC'] = roc_auc_score(ytest, yprob)
+        cm['AUPR'] = average_precision_score(ytest, yprob)
         cm['YI'] = cm['R(Sen)(TPR)'] + cm['Spec(TNR)'] -1
         cm['threshold'] = threshold
         return cm
@@ -148,9 +150,11 @@ def kfold_general(DF,logInfo=False)->pd.DataFrame:
     description: 从多折交叉验证的结果中计算交叉验证的方差和均值, 
                  并且与最好的模型进行t检验, 看模型是否更好
     eg:
-        kfoldGeneralDF,kfoldTtestDF = ml.rf_kfold()
+        kfoldGeneralDF,kfoldTtestDF = wzyFunc.me.kfold_general(DF)
     or:
 
+    param {dict} DF: <- wzyFunc.machineLearning.rf_kfold(xDF,yDF), 传入表示保存结果
+                        同时可以将多个结果竖着concat起来, 一并计算, 并且与最佳模型比较统计学差异
     param {dict} logInfo: <- wzyFunc.dataPrep.make_logInfo(), 传入表示保存结果
     return  resultTab 多折交叉验证的PRF1的mean(std)
             ttestResultDF ttest结果
@@ -176,7 +180,7 @@ def kfold_general(DF,logInfo=False)->pd.DataFrame:
     if bool(logInfo):
         dp.save_csv(resultTab,logInfo,suffix='kfoldGeneral')
         dp.save_csv(ttestResultDF,logInfo,suffix='kfoldTtest')
-    return resultTab,ttestResultDF
+    return resultTab.T,ttestResultDF
 
 
 def kfold_general_fromFile(fileList:list,logInfo:dict):

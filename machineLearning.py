@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-08 13:35:53
-LastEditTime: 2022-05-19 13:50:29
+LastEditTime: 2022-06-22 10:50:21
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 # 用于保存评估机器学习相关函数
@@ -55,7 +55,7 @@ def rf_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fo
     tprs = []
     opts = []
     prf1List=[]
-    bestFold = {'fold': -1, 'ypre': [], 'yprob': [], 'AUC': 0, 'ytest': [], 'yindex': []}
+    
     i = 1
     for train_index, test_index in KFold:
         xtrain = xDF.iloc[train_index, :]
@@ -76,18 +76,11 @@ def rf_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fo
         prf1Dict = me.PRF1(np.array(ytest), ypre, yprob, threshold=opt[0])
         prf1Dict['model']=d['model']
         prf1List.append(prf1Dict)
-        
-        if prf1Dict['AUC'] > bestFold['AUC']:
-            bestFold['AUC'] = prf1Dict['AUC']
-            bestFold['name'] = i
-            bestFold['ypre'] = ypre
-            bestFold['yprob'] = yprob
-            bestFold['ytest'] = ytest.tolist()
-            bestFold['yindex'] = ytest.index.tolist()
+
         i += 1
     me.plot_ROC_kfold(tprs, opts, l=d['l'],logInfo=logInfo)
     if bool(logInfo):
-        dp.save_csv(pd.DataFrame(prf1List),suffix=d['suffix'],fileName=False)
+        dp.save_csv(pd.DataFrame(prf1List), logInfo=logInfo, suffix=d['suffix'],fileName=False)
     return pd.DataFrame(prf1List)
 
 
@@ -113,7 +106,7 @@ def lr_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fo
     tprs = []
     opts = []
     prf1List=[]
-    bestFold = {'fold': -1, 'ypre': [], 'yprob': [], 'AUC': 0, 'ytest': [], 'yindex': []}
+    
     i = 1
     for train_index, test_index in KFold:
         xtrain = xDF.iloc[train_index, :]
@@ -133,18 +126,11 @@ def lr_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fo
         prf1Dict = me.PRF1(np.array(ytest), ypre, yprob, threshold=opt[0])
         prf1Dict['model']=d['model']
         prf1List.append(prf1Dict)
-        
-        if prf1Dict['AUC'] > bestFold['AUC']:
-            bestFold['AUC'] = prf1Dict['AUC']
-            bestFold['name'] = i
-            bestFold['ypre'] = ypre
-            bestFold['yprob'] = yprob
-            bestFold['ytest'] = ytest.tolist()
-            bestFold['yindex'] = ytest.index.tolist()
+
         i += 1
     me.plot_ROC_kfold(tprs, opts, l=d['l'],logInfo=logInfo)
     if bool(logInfo):
-        dp.save_csv(pd.DataFrame(prf1List),suffix=d['suffix'],fileName=False)
+        dp.save_csv(pd.DataFrame(prf1List), logInfo=logInfo, suffix=d['suffix'],fileName=False)
     return pd.DataFrame(prf1List)
 
 
@@ -170,7 +156,7 @@ def lightGBM_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=Fa
     tprs = []
     opts = []
     prf1List=[]
-    bestFold = {'fold': -1, 'ypre': [], 'yprob': [], 'AUC': 0, 'ytest': [], 'yindex': []}
+    
     i = 1
     for train_index, test_index in KFold:
         xtrain = xDF.iloc[train_index, :]
@@ -180,7 +166,7 @@ def lightGBM_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=Fa
 
         model = LGBMC(num_leaves=31,
                       learning_rate=0.05,
-                      n_estimators=20).fit(np.array(xtrain), np.array(ytrain))
+                      n_estimators=100).fit(np.array(xtrain), np.array(ytrain))
         ypre = model.predict(np.array(xtest))
         yprob = model.predict_proba(np.array(xtest))[:, 1]
 
@@ -192,18 +178,11 @@ def lightGBM_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=Fa
         prf1Dict = me.PRF1(np.array(ytest), ypre, yprob, threshold=opt[0])
         prf1Dict['model']=d['model']
         prf1List.append(prf1Dict)
-        
-        if prf1Dict['AUC'] > bestFold['AUC']:
-            bestFold['AUC'] = prf1Dict['AUC']
-            bestFold['name'] = i
-            bestFold['ypre'] = ypre
-            bestFold['yprob'] = yprob
-            bestFold['ytest'] = ytest.tolist()
-            bestFold['yindex'] = ytest.index.tolist()
+
         i += 1
     me.plot_ROC_kfold(tprs, opts, l=d['l'],logInfo=logInfo)
     if bool(logInfo):
-        dp.save_csv(pd.DataFrame(prf1List),suffix=d['suffix'],fileName=False)
+        dp.save_csv(pd.DataFrame(prf1List), logInfo=logInfo, suffix=d['suffix'],fileName=False)
     return pd.DataFrame(prf1List)
 
 
@@ -229,7 +208,7 @@ def XGBoost_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=Fal
     tprs = []
     opts = []
     prf1List=[]
-    bestFold = {'fold': -1, 'ypre': [], 'yprob': [], 'AUC': 0, 'ytest': [], 'yindex': []}
+
     i = 1
     for train_index, test_index in KFold:
         xtrain = xDF.iloc[train_index, :]
@@ -256,17 +235,10 @@ def XGBoost_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=Fal
         prf1Dict['model']=d['model']
         prf1List.append(prf1Dict)
         
-        if prf1Dict['AUC'] > bestFold['AUC']:
-            bestFold['AUC'] = prf1Dict['AUC']
-            bestFold['name'] = i
-            bestFold['ypre'] = ypre
-            bestFold['yprob'] = yprob
-            bestFold['ytest'] = ytest.tolist()
-            bestFold['yindex'] = ytest.index.tolist()
         i += 1
     me.plot_ROC_kfold(tprs, opts, l=d['l'],logInfo=logInfo)
     if bool(logInfo):
-        dp.save_csv(pd.DataFrame(prf1List),suffix=d['suffix'],fileName=False)
+        dp.save_csv(pd.DataFrame(prf1List), logInfo=logInfo, suffix=d['suffix'],fileName=False)
     return pd.DataFrame(prf1List)
 
 
@@ -292,7 +264,6 @@ def svm_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,f
     tprs = []
     opts = []
     prf1List=[]
-    bestFold = {'fold': -1, 'ypre': [], 'yprob': [], 'AUC': 0, 'ytest': [], 'yindex': []}
     i = 1
     for train_index, test_index in KFold:
         xtrain = xDF.iloc[train_index, :]
@@ -315,15 +286,8 @@ def svm_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,f
         prf1Dict['model']=d['model']
         prf1List.append(prf1Dict)
         
-        if prf1Dict['AUC'] > bestFold['AUC']:
-            bestFold['AUC'] = prf1Dict['AUC']
-            bestFold['name'] = i
-            bestFold['ypre'] = ypre
-            bestFold['yprob'] = yprob
-            bestFold['ytest'] = ytest.tolist()
-            bestFold['yindex'] = ytest.index.tolist()
         i += 1
     me.plot_ROC_kfold(tprs, opts, l=d['l'],logInfo=logInfo)
     if bool(logInfo):
-        dp.save_csv(pd.DataFrame(prf1List),suffix=d['suffix'],fileName=False)
+        dp.save_csv(pd.DataFrame(prf1List),logInfo=logInfo,suffix=d['suffix'],fileName=False)
     return pd.DataFrame(prf1List)
