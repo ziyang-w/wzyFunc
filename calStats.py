@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-09 22:52:23
-LastEditTime: 2022-05-18 12:10:47
+LastEditTime: 2022-06-27 11:18:39
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -84,7 +84,7 @@ def cal_ttest_result(dataSet:pd.DataFrame, tcol:list, trow:list, CLS=False, gene
     from itertools import combinations
     TtestDF = pd.DataFrame()
     calParticialTrLabel=False # 默认计算目标列全部unique值两两t检验结果
-    if bool(CLS): #todo,改成向量，形式，与tcol长度相同能够实现对不同列进行不同的设置
+    if bool(CLS): #TODO:改成向量，形式，与tcol长度相同能够实现对不同列进行不同的设置
         calParticialTrLabel=True # 如果传入了CLS参数, 那么就计算目标列中 CLS与其他label的结果，否则计算目标列中所有unique值的两两t检验
     for i, r in enumerate(tcol):
         # 计算全人群

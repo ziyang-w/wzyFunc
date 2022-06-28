@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-10 13:51:24
-LastEditTime: 2022-05-15 00:02:42
+LastEditTime: 2022-06-27 11:28:13
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -97,6 +97,40 @@ def ratio_heatmap(df,y,x,tr,labels=False,bins='auto',log_info=False,sigma=3):
             plot_path = os.path.join(log_path,'plot','heatmap')
                 
             plt.savefig(os.path.join(plot_path,'%s_HeatMap_'%log_info['hour']+br+'_'+x+'_'+y+'.pdf'),dpi=200)
+            # print('plot has been saved in %s'%os.path.join(plot_path,'%s_HeatMap_'%log_info['hour']+br+'_'+x+'_'+y+'.pdf'))
             plt.close()
         else:
             plt.show()
+
+def tsne_visualization(matrix:np.ndarray,title='',logInfo=False):
+    '''
+    TODO : TEST
+    description: 用于绘制tsne进行降维可视化
+    param {np} matrix: 
+    param {None | str} title: 作为图标的title, 同时也会作为结果保存的标签
+    param {None | dict} logInfo: <- wzyFunc.dataPrep.make_logInfo()
+    '''
+
+    from sklearn.manifold import TSNE
+    import matplotlib.pyplot as plt
+    plt.figure(dpi=300)
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, random_state=0,
+            n_iter=1000)
+    tsne_results = tsne.fit_transform(matrix)
+    plt.scatter(tsne_results[:, 0], tsne_results[:, 1])
+    plt.xlabel('x')
+    plt.ylabel('y')
+    if bool(title): # False for title == ''
+        plt.title(title)
+        title += '_' # 加上下划线，为了后续保存的时候更方便查阅
+
+    plt.show()
+
+    if bool(logInfo):
+        log_path = logInfo['logPath']
+        if not os.path.exists(os.path.join(log_path,'plot','tsne')):
+            os.makedirs(os.path.join(log_path,'plot','tsne'))
+        plot_path = os.path.join(log_path,'plot','tsne')
+        plt.savefig(os.path.join(plot_path,'%s%stsne.pdf'%(logInfo['hour'],title)),dpi=200)
+        print('plot has been saved in %s'%os.path.join(plot_path,'%s%stsne.pdf'%(logInfo['hour'],title)))
+        plt.close()

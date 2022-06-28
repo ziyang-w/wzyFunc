@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-08 13:35:05
-LastEditTime: 2022-06-18 12:17:31
+LastEditTime: 2022-06-27 11:21:05
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -36,7 +36,7 @@ def make_logInfo(fileName:str, filePath:str) -> dict:
                'filePath': filePath}
     return logInfo
 
-# todo: save_pickle
+# TODO : save_pickle
 
 def save_csv(df:pd.DataFrame, logInfo:dict, suffix:str, fileName=False):
     '''
@@ -147,7 +147,6 @@ def get3sigma(df:pd.DataFrame, filterList=[], ignoreList=[], sigma=3)->pd.DataFr
 
 def has_feature(dataSet:pd.Series, ruleList:list) -> list:
     '''
-    todo:
     description: 适用于apply()函数, 将分类特征中的"是、有"等文字全部转换成"是", 其他转换成"否"
     param {pd} dataSet: 
     param {list} ruleList: 
@@ -168,9 +167,9 @@ def has_feature(dataSet:pd.Series, ruleList:list) -> list:
     return result
 
 
-# todo  
+# TODO : finish
 def get_SMOTE():
-    ''' todo
+    ''' 
     应用SMOTE对样本不均衡的模型进行插补
     '''
 

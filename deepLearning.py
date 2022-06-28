@@ -3,7 +3,7 @@ Descripttion: coding for deep learning: MLP, CNN, GNN, et al.
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-26 09:23:07
-LastEditTime: 2022-05-26 11:24:06
+LastEditTime: 2022-06-25 17:13:17
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 import os
@@ -54,3 +54,25 @@ class EarlyStopping(object):
     def load_checkpoint(self, model):
         """Load the latest checkpoint."""
         model.load_state_dict(torch.load(self.filename))
+
+
+# 创建一个输入为768的卷积神经网络
+import torch.nn.functional as F
+
+class ConvNet(torch.nn.Module):
+    def __init__(self):
+        super(ConvNet, self).__init__()
+        self.conv1 = torch.nn.Conv2d(1, 10, kernel_size=5)
+        self.conv2 = torch.nn.Conv2d(10, 20, kernel_size=5)
+        self.conv2_drop = torch.nn.Dropout2d()
+        self.fc1 = torch.nn.Linear(320, 50)
+        self.fc2 = torch.nn.Linear(50, 10)
+
+    def forward(self, x):
+        x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = x.view(-1, 320)
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return F.log_softmax(x, dim=1)

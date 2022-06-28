@@ -3,9 +3,10 @@ Descripttion: 保存评估机器学习模型的效果
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-18 22:15:18
-LastEditTime: 2022-06-22 11:22:38
+LastEditTime: 2022-06-27 11:20:10
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
+
 import pandas as pd
 import numpy as np
 import os
@@ -138,11 +139,52 @@ def plot_ROC_kfold(tprs:np.array, opts:tuple, l:str,logInfo=False):
     plt.title('ROC: %s' % l)
     plt.legend(loc="lower right")
     
-    # todo 设置标签字体稍微小一点以防盖住曲线文字
+    # TODO: 设置标签字体稍微小一点以防盖住曲线文字
     
     if bool(logInfo):
         plt.savefig(os.path.join(logInfo['plotPath'], logInfo['hour'] +'ROC_' + l + '.pdf'), dpi=300)
     else: plt.show()
+
+def plot_ROC_kmodel(kmodel:dict,logInfo=False)->None:
+    '''
+    description: 用于绘制多模型的ROC曲线
+    param {dict} kmodel: 
+                 eg: {'TPR_MEAN': [float],'TPR_STD': [float], 'L': [str]}
+    param {*} logInfo: <- wzyFunc.dataPrep.make_logInfo()
+    return {None}
+    '''
+    from sklearn.metrics import auc
+
+    aucs = []
+    tprs_mean = kmodel['TPR_MEAN']
+    tprs_std = kmodel['TPR_STD']
+    l = kmodel['L']
+    mean_fpr = np.linspace(0, 1, 100)
+    fig = plt.figure(figsize=(9, 9), dpi=150)
+    i = 0
+
+    for mean_tpr, std_tpr, l in zip(tprs_mean, tprs_std, l):
+        roc_auc = auc(mean_fpr, mean_tpr)
+        aucs.append(roc_auc)
+        plt.plot(mean_fpr, mean_tpr, lw=1, label=l + '(AUC = %0.2f)' % roc_auc)
+
+        # 在一个标准差内绘制阴影线 
+        tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+        tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+        plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2)
+        i += 1
+    plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Chance', alpha=.8)
+
+    plt.xlim([-0.05, 1.05])
+    plt.ylim([-0.05, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC' )
+    plt.legend(loc="lower right")
+    
+    if bool(logInfo):
+        plt.savefig(os.path.join(logInfo['plotPath'], logInfo['hour'] + 'ROC_kmodel.pdf'), dpi=300)
+    plt.show()
 
 
 def kfold_general(DF,logInfo=False)->pd.DataFrame:
