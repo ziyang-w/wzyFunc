@@ -3,7 +3,7 @@ Descripttion: 保存评估机器学习模型的效果
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-18 22:15:18
-LastEditTime: 2022-06-27 11:20:10
+LastEditTime: 2022-06-30 14:37:45
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -26,7 +26,7 @@ def PRF1(ytest:np.array, ypre:np.array, yprob:np.array,threshold=0.5)->dict:
     param {np} ypre: 模型预测标签
     param {np} yprob: 模型输出的每个样本的预测概率
     param {int} threshold: 阈值, 默认为0.5
-    return prf1Dict: {'A','P(PPV)','R(Sen)(TPR)','Spec(TNR)','F1','AUC','YI','threshold'}
+    return prf1Dict: {'A','P(PPV)','R(Sen)(TPR)','Spec(TNR)','F1','AUC','AUPR','YI','threshold'}
     '''
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, \
         roc_auc_score, average_precision_score, confusion_matrix as CM
@@ -55,6 +55,82 @@ def PRF1(ytest:np.array, ypre:np.array, yprob:np.array,threshold=0.5)->dict:
         cm['YI'] = cm['R(Sen)(TPR)'] + cm['Spec(TNR)'] -1
         cm['threshold'] = threshold
         return cm
+
+def PRF1(real_score:np.array, predict_score:np.array)->dict:
+    # TODO:TEST
+    """Calculate the performance metrics.
+    Resource code is acquired from:
+    Yu Z, Huang F, Zhao X et al.
+     Predicting drug-disease associations through layer attention graph convolutional network,
+     Brief Bioinform 2021;22.
+
+    Parameters
+    ----------
+    real_score: true labels
+    predict_score: model predictions
+
+    Return
+    ---------
+    AUC, AUPR, Accuracy, F1-Score, Precision, Recall, Specificity
+    """
+    sorted_predict_score = np.array(
+        sorted(list(set(np.array(predict_score).flatten()))))
+    sorted_predict_score_num = len(sorted_predict_score)
+    thresholds = sorted_predict_score[np.int32(
+        sorted_predict_score_num * np.arange(1, 1000) / 1000)]
+    thresholds = np.mat(thresholds)
+    thresholds_num = thresholds.shape[1]
+
+    predict_score_matrix = np.tile(predict_score, (thresholds_num, 1))
+    negative_index = np.where(predict_score_matrix < thresholds.T)
+    positive_index = np.where(predict_score_matrix >= thresholds.T)
+    predict_score_matrix[negative_index] = 0
+    predict_score_matrix[positive_index] = 1
+    TP = predict_score_matrix.dot(real_score.T)
+    FP = predict_score_matrix.sum(axis=1) - TP
+    FN = real_score.sum() - TP
+    TN = len(real_score.T) - TP - FP - FN
+
+    fpr = FP / (FP + TN)
+    tpr = TP / (TP + FN)
+    ROC_dot_matrix = np.mat(sorted(np.column_stack((fpr, tpr)).tolist())).T
+    ROC_dot_matrix.T[0] = [0, 0]
+    ROC_dot_matrix = np.c_[ROC_dot_matrix, [1, 1]]
+    x_ROC = ROC_dot_matrix[0].T
+    y_ROC = ROC_dot_matrix[1].T
+    auc = 0.5 * (x_ROC[1:] - x_ROC[:-1]).T * (y_ROC[:-1] + y_ROC[1:])
+
+    recall_list = tpr
+    precision_list = TP / (TP + FP)
+    PR_dot_matrix = np.mat(sorted(np.column_stack(
+        (recall_list, precision_list)).tolist())).T
+    PR_dot_matrix.T[0] = [0, 1]
+    PR_dot_matrix = np.c_[PR_dot_matrix, [1, 0]]
+    x_PR = PR_dot_matrix[0].T
+    y_PR = PR_dot_matrix[1].T
+    aupr = 0.5 * (x_PR[1:] - x_PR[:-1]).T * (y_PR[:-1] + y_PR[1:])
+
+    f1_score_list = 2 * TP / (len(real_score.T) + TP - TN)
+    accuracy_list = (TP + TN) / len(real_score.T)
+    specificity_list = TN / (TN + FP)
+
+    max_index = np.argmax(f1_score_list)
+    f1_score = f1_score_list[max_index]
+    accuracy = accuracy_list[max_index]
+    specificity = specificity_list[max_index]
+    recall = recall_list[max_index]
+    precision = precision_list[max_index]
+
+    cm = {'A':accuracy,
+    'P(PPV)':precision,
+    'R(Sen)(TPR)':recall,
+    'Spec(TNR)':specificity,
+    'F1':f1_score,
+    'AUC':auc[0, 0],
+    'AUPR':aupr[0, 0],
+    'YI':recall + specificity - 1,
+    'threshold':thresholds[max_index]}
+    return cm
 
 def plot_ROC(yprob, ytest, l,logInfo=False):
     '''

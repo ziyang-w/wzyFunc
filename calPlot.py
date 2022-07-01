@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-10 13:51:24
-LastEditTime: 2022-06-27 11:28:13
+LastEditTime: 2022-06-28 13:42:42
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -102,9 +102,8 @@ def ratio_heatmap(df,y,x,tr,labels=False,bins='auto',log_info=False,sigma=3):
         else:
             plt.show()
 
-def tsne_visualization(matrix:np.ndarray,title='',logInfo=False):
+def tsne_visualization(X:np.ndarray,y:np.array,title='',logInfo=False):
     '''
-    TODO : TEST
     description: 用于绘制tsne进行降维可视化
     param {np} matrix: 
     param {None | str} title: 作为图标的title, 同时也会作为结果保存的标签
@@ -113,11 +112,14 @@ def tsne_visualization(matrix:np.ndarray,title='',logInfo=False):
 
     from sklearn.manifold import TSNE
     import matplotlib.pyplot as plt
+#     from matplotlib import colors  # 注意！为了调整“色盘”，需要导入colors
+    
     plt.figure(dpi=300)
-    tsne = TSNE(n_components=2, verbose=1, perplexity=40, random_state=0,
-            n_iter=1000)
-    tsne_results = tsne.fit_transform(matrix)
-    plt.scatter(tsne_results[:, 0], tsne_results[:, 1])
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, random_state=0,n_iter=1000)
+    tsne_results = tsne.fit_transform(X)
+    
+    # 可视化
+    plt.scatter(tsne_results[:, 0], tsne_results[:, 1],alpha=0.3,c=y,cmap='viridis')
     plt.xlabel('x')
     plt.ylabel('y')
     if bool(title): # False for title == ''

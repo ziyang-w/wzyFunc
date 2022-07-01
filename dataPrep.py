@@ -4,13 +4,14 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-08 13:35:05
-LastEditTime: 2022-06-27 11:21:05
+LastEditTime: 2022-07-01 20:58:37
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
 import pandas as pd
 import numpy as np
 import os
+import pickle
 
 def make_logInfo(fileName:str, filePath:str) -> dict:
     '''
@@ -28,8 +29,10 @@ def make_logInfo(fileName:str, filePath:str) -> dict:
     if not os.path.exists(logPath):
         os.makedirs(logPath)
         os.makedirs(os.path.join(logPath, 'plot'))
+        os.makedirs(os.path.join(logPath, 'pickle'))
     logInfo = {'logPath': logPath,
                'plotPath':os.path.join(logPath, 'plot'),
+               'picklePath':os.path.join(logPath, 'pickle'),
                'date':startDate,
                'hour': hour,
                'fileName': fileName,
@@ -37,6 +40,25 @@ def make_logInfo(fileName:str, filePath:str) -> dict:
     return logInfo
 
 # TODO : save_pickle
+def save_pickle(variable:any, logInfo:dict, suffix:str, fileName=False):
+    '''
+    description:  将结果保存到对应的log目录下, 
+                  eg: 'filePath\\log\\fileName\\mm-dd\\hh_fileName_suffix.csv'
+                  Tips: 在调用时, 一般只加一次后缀, 即在suffix参数中尽量用驼峰法命名, 而不包含'_', 方便后续查找
+    param {pd} df: 要保存的DataFrame
+    param {dict} logInfo: <- wzyFunc.make_logInfo()
+    param {str} suffix: 想要添加的后缀名, 一般应用驼峰法命名, 而不使用'_'来进行分隔
+    param { None | True } fileName: 在保存的文件名中是否加入当前分析数据集文件名后缀logInfo['fileName']
+    return None
+    '''
+    suffix += '.pkl'
+    if bool(fileName):
+        tPath = os.path.join(logInfo['logPath'],
+                             str(logInfo['hour'])+logInfo['fileName'].split('.')[0]+'_'+suffix)
+    else:
+        tPath = os.path.join(logInfo['picklePath'], str(logInfo['hour'])+suffix)
+    pickle.dump(variable, open(tPath, 'wb'))
+    print('file has been saved in : %s' % tPath)
 
 def save_csv(df:pd.DataFrame, logInfo:dict, suffix:str, fileName=False):
     '''
