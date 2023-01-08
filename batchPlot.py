@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib
 # 该命令主要用于生成图片，设置之后不会在前端显示图片。对于大量绘图时启用，不然会导致内存泄漏，导致代码崩溃
 matplotlib.use('agg')
+# matplotlib.use('Qt5Agg')
+
 import matplotlib.pyplot as plt
 import os
 import sys

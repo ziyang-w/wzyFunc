@@ -3,7 +3,7 @@ Descripttion: 保存评估机器学习模型的效果
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-18 22:15:18
-LastEditTime: 2022-06-30 14:37:45
+LastEditTime: 2023-01-08 19:47:17
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -18,7 +18,7 @@ import dataPrep as dp
 
 cp.set_plot_chinese()
 
-def PRF1(ytest:np.array, ypre:np.array, yprob:np.array,threshold=0.5)->dict:
+def PRF1(ytest:np.array, yprob:np.array,threshold:float=None)->dict:
     '''
     description: 警告: 如果两个模型不能输出prob和decision_function的话, 
                  模型无法计算AUC分数, 同时计算之后也没有任何意义! 
@@ -29,109 +29,107 @@ def PRF1(ytest:np.array, ypre:np.array, yprob:np.array,threshold=0.5)->dict:
     return prf1Dict: {'A','P(PPV)','R(Sen)(TPR)','Spec(TNR)','F1','AUC','AUPR','YI','threshold'}
     '''
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, \
-        roc_auc_score, average_precision_score, confusion_matrix as CM
-    cm={}
-    if threshold == 0.5:
-        cm['A']= accuracy_score(ytest, ypre)
-        cm['P(PPV)'] = precision_score(ytest, ypre) #PPV
-        cm['R(Sen)(TPR)'] = recall_score(ytest, ypre)
-        cmTemp= CM(ytest,ypre,labels=[1,0]) 
-        cm['Spec(TNR)'] = cmTemp[1,1]/cmTemp[1,:].sum() #TNR
-        cm['F1']= f1_score(ytest, ypre)
-        cm['AUC'] = roc_auc_score(ytest, yprob)
-        cm['AUPR'] = average_precision_score(ytest, yprob)
-        cm['YI'] = cm['R(Sen)(TPR)'] + cm['Spec(TNR)'] -1
-        cm['threshold'] = threshold
-        return  cm
-    else:
-        cm['A'] = accuracy_score(ytest, [1 if x > threshold else 0 for x in yprob])
-        cm['P(PPV)'] = precision_score(ytest, [1 if x > threshold else 0 for x in yprob])
-        cm['R(Sen)(TPR)'] = recall_score(ytest, [1 if x > threshold else 0 for x in yprob])
-        cmTemp= CM(ytest,[1 if x > threshold else 0 for x in yprob],labels=[1,0]) 
-        cm['Spec(TNR)'] = cmTemp[1,1]/cmTemp[1,:].sum() #TNR
-        cm['F1'] = f1_score(ytest, [1 if x > threshold else 0 for x in yprob])
-        cm['AUC'] = roc_auc_score(ytest, yprob)
-        cm['AUPR'] = average_precision_score(ytest, yprob)
-        cm['YI'] = cm['R(Sen)(TPR)'] + cm['Spec(TNR)'] -1
-        cm['threshold'] = threshold
-        return cm
+        roc_auc_score, average_precision_score, confusion_matrix as CM,roc_curve,matthews_corrcoef
+    cm={}   
+    if threshold == None:
+        fpr, tpr, thr = roc_curve(ytest, yprob)
+        threshold, _ = find_optimal_cutoff(tpr, fpr, threshold=thr)
+    ypre = (yprob>threshold).astype(int)
+    cm['AUC'] = roc_auc_score(ytest, yprob)
+    cm['AUPR'] = average_precision_score(ytest, yprob)
+    cm['F1']= f1_score(ytest, ypre)
+    cm['MCC'] = matthews_corrcoef(ytest, ypre)
+    cm['A']= accuracy_score(ytest, ypre)
+    cm['R(Sen)(TPR)'] = recall_score(ytest, ypre)
+    cmTemp= CM(ytest,ypre,labels=[1,0]) 
+    cm['Spec(TNR)'] = cmTemp[1,1]/cmTemp[1,:].sum() #TNR
+    cm['P(PPV)'] = precision_score(ytest, ypre) #PPV
+    cm['YI'] = cm['R(Sen)(TPR)'] + cm['Spec(TNR)'] -1
+    cm['threshold'] = threshold
+    return  cm
 
-def PRF1(real_score:np.array, predict_score:np.array)->dict:
-    # TODO:TEST
-    """Calculate the performance metrics.
-    Resource code is acquired from:
-    Yu Z, Huang F, Zhao X et al.
-     Predicting drug-disease associations through layer attention graph convolutional network,
-     Brief Bioinform 2021;22.
+# def PRF1(real_score:np.array, predict_score:np.array)->dict:
+#     """Calculate the performance metrics.
+#     Resource code is acquired from:
+#     Yu Z, Huang F, Zhao X et al.
+#      Predicting drug-disease associations through layer attention graph convolutional network,
+#      Brief Bioinform 2021;22.
 
-    Parameters
-    ----------
-    real_score: true labels
-    predict_score: model predictions
+#     Parameters
+#     ----------
+#     real_score: true labels, ytest, shape(n,), means a row vector.
+#     predict_score: model predictions, yprob, shape(n,)
 
-    Return
-    ---------
-    AUC, AUPR, Accuracy, F1-Score, Precision, Recall, Specificity
-    """
-    sorted_predict_score = np.array(
-        sorted(list(set(np.array(predict_score).flatten()))))
-    sorted_predict_score_num = len(sorted_predict_score)
-    thresholds = sorted_predict_score[np.int32(
-        sorted_predict_score_num * np.arange(1, 1000) / 1000)]
-    thresholds = np.mat(thresholds)
-    thresholds_num = thresholds.shape[1]
+#     Return
+#     ---------
+#     AUC, AUPR, Accuracy, F1-Score, Precision, Recall, Specificity
+#     """
+#     sorted_predict_score = np.array(
+#         sorted(list(set(np.array(predict_score).flatten()))))
+#     sorted_predict_score_num = len(sorted_predict_score)
+#     thresholds = sorted_predict_score[np.int32(
+#         sorted_predict_score_num * np.arange(1, 1000) / 1000)]
+#     thresholds = np.mat(thresholds)
+#     thresholds_num = thresholds.shape[1]
 
-    predict_score_matrix = np.tile(predict_score, (thresholds_num, 1))
-    negative_index = np.where(predict_score_matrix < thresholds.T)
-    positive_index = np.where(predict_score_matrix >= thresholds.T)
-    predict_score_matrix[negative_index] = 0
-    predict_score_matrix[positive_index] = 1
-    TP = predict_score_matrix.dot(real_score.T)
-    FP = predict_score_matrix.sum(axis=1) - TP
-    FN = real_score.sum() - TP
-    TN = len(real_score.T) - TP - FP - FN
+#     predict_score_matrix = np.tile(predict_score, (thresholds_num, 1))
+#     negative_index = np.where(predict_score_matrix < thresholds.T)
+#     positive_index = np.where(predict_score_matrix >= thresholds.T)
+#     predict_score_matrix[negative_index] = 0
+#     predict_score_matrix[positive_index] = 1
+#     TP = predict_score_matrix.dot(real_score.T)
+#     FP = predict_score_matrix.sum(axis=1) - TP
+#     FN = real_score.sum() - TP
+#     TN = len(real_score.T) - TP - FP - FN
 
-    fpr = FP / (FP + TN)
-    tpr = TP / (TP + FN)
-    ROC_dot_matrix = np.mat(sorted(np.column_stack((fpr, tpr)).tolist())).T
-    ROC_dot_matrix.T[0] = [0, 0]
-    ROC_dot_matrix = np.c_[ROC_dot_matrix, [1, 1]]
-    x_ROC = ROC_dot_matrix[0].T
-    y_ROC = ROC_dot_matrix[1].T
-    auc = 0.5 * (x_ROC[1:] - x_ROC[:-1]).T * (y_ROC[:-1] + y_ROC[1:])
+#     fpr = FP / (FP + TN)
+#     tpr = TP / (TP + FN)
+#     ROC_dot_matrix = np.mat(sorted(np.column_stack((fpr, tpr)).tolist())).T
+#     ROC_dot_matrix.T[0] = [0, 0]
+#     ROC_dot_matrix = np.c_[ROC_dot_matrix, [1, 1]]
+#     x_ROC = ROC_dot_matrix[0].T
+#     y_ROC = ROC_dot_matrix[1].T
+#     auc = 0.5 * (x_ROC[1:] - x_ROC[:-1]).T * (y_ROC[:-1] + y_ROC[1:])
 
-    recall_list = tpr
-    precision_list = TP / (TP + FP)
-    PR_dot_matrix = np.mat(sorted(np.column_stack(
-        (recall_list, precision_list)).tolist())).T
-    PR_dot_matrix.T[0] = [0, 1]
-    PR_dot_matrix = np.c_[PR_dot_matrix, [1, 0]]
-    x_PR = PR_dot_matrix[0].T
-    y_PR = PR_dot_matrix[1].T
-    aupr = 0.5 * (x_PR[1:] - x_PR[:-1]).T * (y_PR[:-1] + y_PR[1:])
+#     recall_list = tpr
+#     precision_list = TP / (TP + FP)
+#     PR_dot_matrix = np.mat(sorted(np.column_stack(
+#         (recall_list, precision_list)).tolist())).T
+#     PR_dot_matrix.T[0] = [0, 1]
+#     PR_dot_matrix = np.c_[PR_dot_matrix, [1, 0]]
+#     x_PR = PR_dot_matrix[0].T
+#     y_PR = PR_dot_matrix[1].T
+#     aupr = 0.5 * (x_PR[1:] - x_PR[:-1]).T * (y_PR[:-1] + y_PR[1:])
 
-    f1_score_list = 2 * TP / (len(real_score.T) + TP - TN)
-    accuracy_list = (TP + TN) / len(real_score.T)
-    specificity_list = TN / (TN + FP)
+#     f1_score_list = 2 * TP / (len(real_score.T) + TP - TN)
+#     accuracy_list = (TP + TN) / len(real_score.T)
+#     specificity_list = TN / (TN + FP)
 
-    max_index = np.argmax(f1_score_list)
-    f1_score = f1_score_list[max_index]
-    accuracy = accuracy_list[max_index]
-    specificity = specificity_list[max_index]
-    recall = recall_list[max_index]
-    precision = precision_list[max_index]
+#     max_index = np.argmax(f1_score_list)
+#     f1_score = f1_score_list[max_index]
+#     accuracy = accuracy_list[max_index]
+#     specificity = specificity_list[max_index]
+#     recall = recall_list[max_index]
+#     precision = precision_list[max_index]
 
-    cm = {'A':accuracy,
-    'P(PPV)':precision,
-    'R(Sen)(TPR)':recall,
-    'Spec(TNR)':specificity,
-    'F1':f1_score,
-    'AUC':auc[0, 0],
-    'AUPR':aupr[0, 0],
-    'YI':recall + specificity - 1,
-    'threshold':thresholds[max_index]}
-    return cm
-
+#     cm = {
+#     'AUC':auc[0, 0],
+#     'AUPR':aupr[0, 0],
+#     'F1':f1_score,
+#     'A':accuracy,
+#     'R(Sen)(TPR)':recall,
+#     'Spec(TNR)':specificity,
+#     'P(PPV)':precision,
+#     'YI':recall + specificity - 1,
+#     'threshold':thresholds.T[max_index][0][0].item()}
+#     return cm
+def figure_setting():
+    return {
+        'axisFont' : {'family':'Times New Roman', 'weight':'normal','size': 15},
+        'titleFont' : {'family' : 'Times New Roman','size': 18},
+        'legendFont' : {'family' : 'Times New Roman','size': 12},
+        'figureSize':(12,9),
+        'fileType':'png'}
 def plot_ROC(yprob, ytest, l,logInfo=False):
     '''
     yprob: 模型预测的概率
@@ -144,12 +142,17 @@ def plot_ROC(yprob, ytest, l,logInfo=False):
 
     FPR, recall, _ = roc_curve(ytest.ravel(), yprob.ravel())
 
+
+    figSetting = figure_setting()
+    plt.figure(figsize=figSetting['figureSize'])
     plt.plot(FPR, recall, 'r-', label=l + ', AUC=%.2f' % auc(FPR, recall))
     plt.plot([0, 1], [0, 1], 'b--')
-    plt.title(l)
-    plt.legend()
+    plt.title(l,fontdict=figSetting['titleFont'])
+    plt.xlabel('False Positive Rate',fontdict=figSetting['axisFont'])
+    plt.ylabel('True Positive Rate',fontdict=figSetting['axisFont'])
+    plt.legend(frozenset(loc='lower right'),prop=figSetting['legendFont'])
     if bool(logInfo):
-        plt.savefig(os.path.join(logInfo['logPath'],'%s_%s.pdf'%(logInfo['hour'],l)),dpi=200)
+        plt.savefig(os.path.join(logInfo['logPath'],'%s_%s.pdf'%(logInfo['hour'],l)),dpi=400,bbox_inches = 'tight',pad_inches = 0.1)
     plt.show()
 
 
@@ -182,10 +185,12 @@ def plot_ROC_kfold(tprs:np.array, opts:tuple, l:str,logInfo=False):
     from sklearn.metrics import auc
     aucs = []
     mean_fpr = np.linspace(0, 1, 100)
-    # mean_fpr = max()
-    # fig = plt.figure(figsize=(12, 9), dpi=150)
+
+    figSetting = figure_setting()
+    plt.figure(figsize=figSetting['figureSize'])
     # plt.rcParams['font.sans-serif'] = ['SimHei']
-    # plt.rcParams['axes.unicode_minus'] = False
+    plt.rcParams['axes.unicode_minus'] = False
+
     i = 0
     for tpr, opt in zip(tprs,opts):
         roc_auc = auc(mean_fpr, tpr)
@@ -210,18 +215,18 @@ def plot_ROC_kfold(tprs:np.array, opts:tuple, l:str,logInfo=False):
     # 最后美化图像
     plt.xlim([-0.05, 1.05])
     plt.ylim([-0.05, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC: %s' % l)
-    plt.legend(loc="lower right")
+    plt.xlabel('False Positive Rate', fontproperties=figSetting['axisFont'])
+    plt.ylabel('True Positive Rate', fontproperties=figSetting['axisFont'])
+    plt.title('ROC: %s' % l, fontproperties=figSetting['titleFont'])
+    plt.legend(loc="lower right", prop=figSetting['legendFont'])
     
     # TODO: 设置标签字体稍微小一点以防盖住曲线文字
     
     if bool(logInfo):
-        plt.savefig(os.path.join(logInfo['plotPath'], logInfo['hour'] +'ROC_' + l + '.pdf'), dpi=300)
+        plt.savefig(os.path.join(logInfo['plotPath'], logInfo['hour'] +'ROC_' + l + '.pdf'), dpi=400,bbox_inches = 'tight',pad_inches = 0.1)
     else: plt.show()
 
-def plot_ROC_kmodel(kmodel:dict,logInfo=False)->None:
+def plot_ROC_kmodel(kmodel:dict,logInfo=False,suffix='')->None:
     '''
     description: 用于绘制多模型的ROC曲线
     param {dict} kmodel: 
@@ -234,32 +239,37 @@ def plot_ROC_kmodel(kmodel:dict,logInfo=False)->None:
     aucs = []
     tprs_mean = kmodel['TPR_MEAN']
     tprs_std = kmodel['TPR_STD']
-    l = kmodel['L']
+    labels = kmodel['L']
     mean_fpr = np.linspace(0, 1, 100)
-    fig = plt.figure(figsize=(9, 9), dpi=150)
+    
+    figSetting = figure_setting()
+    plt.figure(figsize=figSetting['figureSize'])
+    # plt.rcParams['font.sans-serif'] = ['SimHei']
+    plt.rcParams['axes.unicode_minus'] = False
+
     i = 0
 
-    for mean_tpr, std_tpr, l in zip(tprs_mean, tprs_std, l):
+    for mean_tpr, std_tpr, l in zip(tprs_mean, tprs_std, labels):
         roc_auc = auc(mean_fpr, mean_tpr)
         aucs.append(roc_auc)
-        plt.plot(mean_fpr, mean_tpr, lw=1, label=l + '(AUC = %0.2f)' % roc_auc)
+        plt.plot(mean_fpr, mean_tpr, lw=1, label=l + '(AUC = {:.2f})'.format(roc_auc))
 
         # 在一个标准差内绘制阴影线 
         tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
         tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-        plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2)
+        plt.fill_between(mean_fpr, tprs_lower, tprs_upper, alpha=.15)
         i += 1
     plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Chance', alpha=.8)
 
     plt.xlim([-0.05, 1.05])
     plt.ylim([-0.05, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC' )
-    plt.legend(loc="lower right")
+    plt.xlabel('False Positive Rate',fontdict=figSetting['axisFont'])
+    plt.ylabel('True Positive Rate',fontdict=figSetting['axisFont'])
+    plt.title('ROC' ,fontdict=figSetting['titleFont'])
+    plt.legend(loc="lower right",prop=figSetting['legendFont'])
     
     if bool(logInfo):
-        plt.savefig(os.path.join(logInfo['plotPath'], logInfo['hour'] + 'ROC_kmodel.pdf'), dpi=300)
+        plt.savefig(os.path.join(logInfo['plotPath'], logInfo['hour'] + 'ROC_kmodel_{}.pdf'.format(suffix)), dpi=300)
     plt.show()
 
 
@@ -291,7 +301,7 @@ def kfold_general(DF,logInfo=False)->pd.DataFrame:
         cols = list(model.select_dtypes(np.number).columns)
         for col in cols:
             model[col+'(std)'] = str(np.round(model[col].mean(),3)) + '±' + str(np.round(model[col].std(),2))
-        resultTab = pd.concat([resultTab,model.loc[2,'model':]],axis=1,ignore_index=True)
+        resultTab = pd.concat([resultTab,model.loc['2','model':]],axis=1,ignore_index=True)
         # 保存所有prf1DF
         modelList = pd.concat([modelList,model],axis=0)
     ttestResultDF = cs.cal_ttest_result(modelList,tcol=['model'],trow=cols,CLS=bestModel['model'])

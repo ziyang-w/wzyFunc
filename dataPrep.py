@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-08 13:35:05
-LastEditTime: 2022-07-01 20:58:37
+LastEditTime: 2023-01-08 17:16:34
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -60,7 +60,7 @@ def save_pickle(variable:any, logInfo:dict, suffix:str, fileName=False):
     pickle.dump(variable, open(tPath, 'wb'))
     print('file has been saved in : %s' % tPath)
 
-def save_csv(df:pd.DataFrame, logInfo:dict, suffix:str, fileName=False):
+def save_csv(df:pd.DataFrame, logInfo:dict, suffix:str, fileName=False,subFolder=''):
     '''
     description:  将结果保存到对应的log目录下, 
                   eg: 'filePath\\log\\fileName\\mm-dd\\hh_fileName_suffix.csv'
@@ -72,11 +72,15 @@ def save_csv(df:pd.DataFrame, logInfo:dict, suffix:str, fileName=False):
     return None
     '''
     suffix += '.csv'
+    if bool(subFolder):
+        if not os.path.exists(os.path.join(logInfo['logPath'], subFolder)):
+            os.makedirs(os.path.join(logInfo['logPath'], subFolder))
+        
     if bool(fileName):
-        tPath = os.path.join(logInfo['logPath'],
+        tPath = os.path.join(logInfo['logPath'], subFolder,
                              str(logInfo['hour'])+logInfo['fileName'].split('.')[0]+'_'+suffix)
     else:
-        tPath = os.path.join(logInfo['logPath'], str(logInfo['hour'])+suffix)
+        tPath = os.path.join(logInfo['logPath'], subFolder, str(logInfo['hour'])+suffix)
     df.to_csv(tPath,
               index=False,
               encoding='utf-8-sig')
