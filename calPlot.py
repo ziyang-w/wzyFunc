@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-10 13:51:24
-LastEditTime: 2022-06-28 13:42:42
+LastEditTime: 2023-05-29 21:42:22
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -23,24 +23,31 @@ def set_plot_chinese():
     pltform = sys.platform
     if 'win' in pltform: # pltform.index('win)>-1; pltform.find('win')>-1
         plt.rcParams['font.sans-serif']=['SimHei'] # windows
+        plt.rcParams['font.size'] = 14
+        plt.rcParams['font.family'] = 'Times New Roman'
+        plt.rcParams['font.weight'] = 'normal'
     if 'darwin' in pltform: # pltform.index('win)>-1; pltform.find('win')>-1
         plt.rcParams['font.family'] = 'PingFang HK' # Mac
+        plt.rcParams['font.size'] = 14
+        plt.rcParams['font.family'] = 'Times New Roman'
+        plt.rcParams['font.weight'] = 'normal'
     # if 'linux' in pltform: # pltform.index('win)>-1; pltform.find('win')>-1
     #     plt.rcParams['font.family'] = 'PingFang HK' # Mac
 
 
-def ratio_heatmap(df,y,x,tr,labels=False,bins='auto',log_info=False,sigma=3):
+def ratio_heatmap(df,y:str,x:str,tr:list,labels=False,bins='auto',log_info=False,sigma=3):
     '''
     用于绘制风险百分比的热力图函数
     df:数据集
     x:绘制的x列名
     y:绘制的y列名
+    tr:风险度列表，要计数的列表，需要转变为【数值型】的变量
     labels: []
         plt.xlabel(labels[0])
         plt.ylabel(labels[1]) 
         plt.title(labels[2])
     log_info: 传入log信息的字典, {'logPath','hour'}, 不传该参数, 默认为绘图
-    tr:风险度列表，要计数的列表
+    TODO: auto bins，将auto设置为间隔，进行等距分箱
     '''
     
     # 排除异常值
@@ -67,6 +74,7 @@ def ratio_heatmap(df,y,x,tr,labels=False,bins='auto',log_info=False,sigma=3):
         heatDFpos = pd.pivot_table(testSet,values=br,index=y,columns=x,aggfunc='sum',fill_value=0)
 
         heatDF = heatDFpos/(heatDFtotal+0.01)
+        # 对坐标进行省略小数位数
         heatDF.columns = np.round(heatDF.columns.values.tolist(),1)
         heatDF.index = np.round(heatDF.index.values.tolist(),1)
         heatDF['order'] = list(range(len(heatDF)))

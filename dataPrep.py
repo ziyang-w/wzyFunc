@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-08 13:35:05
-LastEditTime: 2023-01-08 17:16:34
+LastEditTime: 2023-07-09 15:06:33
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -114,7 +114,7 @@ def bigfile_readlines(f, separator:str):
 def missing_dect(df)->pd.DataFrame:
     '''统计每个变量的缺失数据的数量, 变量名称的DataFrame'''
     cols = {'feature_no': [], 'Variables': [], 'dtypes': [],
-            'unique_shape': [], 'null_num': [], 'null_rate': []}
+            'unique_shape': [], 'null_num': [], 'sample_num': [],'null_rate': []}
     for e, c in enumerate(df.columns):
         #         if sum(pd.isnull(df[c]))!=0:
         cols['feature_no'].append(e)
@@ -122,6 +122,7 @@ def missing_dect(df)->pd.DataFrame:
         cols['dtypes'].append(df[c].dtypes)
         cols['unique_shape'].append(len(df[c].unique()))
         cols['null_num'].append(sum(pd.isnull(df[c])))
+        cols['sample_num'].append(sum(pd.notna(df[c])))
         cols['null_rate'].append(sum(pd.isnull(df[c]))/len(df[c]))
     return pd.DataFrame(cols).sort_values(ascending=False, by='null_num')
 
@@ -199,7 +200,7 @@ def get_SMOTE():
     应用SMOTE对样本不均衡的模型进行插补
     '''
 
-def MIC_selection(df:pd.DataFrame,targetY:str,logInfo=False,k=20)->pd.DataFrame:
+def MIC_selection(df:pd.DataFrame,targetY:str,logInfo=False,k=20)->tuple:
     '''
     description: 计算互信息值, 并且筛选后的特征集df
     param {pd} df: 数据集

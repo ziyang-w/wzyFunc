@@ -17,6 +17,10 @@ import calPlot as cp
 
 cp.set_plot_chinese()
 
+# 保存图片防止图片被裁切
+# plt.savefig(os.path.join(logInfo['plotPath'],'./weight.png'),dpi=300,bbox_inches='tight')
+# 
+
 def plot_hist(df,tdAnova,log_path, suffix=''):
     '''
     循环绘制单变量的直方图

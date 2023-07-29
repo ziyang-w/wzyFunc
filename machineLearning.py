@@ -4,7 +4,7 @@ version: 0.1
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-08 13:35:53
-LastEditTime: 2023-01-08 19:47:22
+LastEditTime: 2023-07-01 19:38:14
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 # 用于保存评估机器学习相关函数
@@ -36,16 +36,20 @@ def rf(xtrain:np.array,
        ytrain:np.array,
        xtest:np.array,
        ytest:np.array,
-       random_state:int, suffix='',tag=False,logInfo=False)->dict:
+       random_state:int, suffix='',tag=False,logInfo=False,
+       best_params:dict=None)->dict:
     '''
     用于单次调用机器学习模型, 主要用于kfold_model调用
     '''
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.metrics import roc_curve
     d = {'model':'RF','suffix':'resultRF','l':'Random Forest'}
-    model = RandomForestClassifier(n_estimators=100,
-                                   class_weight='balanced',
-                                   random_state=random_state).fit(xtrain, ytrain)
+    if best_params is not None:
+        model = RandomForestClassifier(**best_params).fit(xtrain, ytrain)
+    else:
+        model = RandomForestClassifier(n_estimators=100,
+                                       class_weight='balanced',
+                                       random_state=random_state).fit(xtrain, ytrain)
     ypre = model.predict(xtest)
     yprob = model.predict_proba(xtest)[:, 1]
 #     me.plot_ROC(yprob, ytest, l = d['l'],logInfo=False)
@@ -60,24 +64,28 @@ def rf(xtrain:np.array,
             dataDict = {'ytest':ytest.reshape(-1), 'ypre':ypre.reshape(-1), 'yprob':yprob.reshape(-1)}
             dp.save_csv(df=pd.DataFrame(dataDict), suffix=suffix+'_{}_fold{}'.format(d['model'],tag['fold']),logInfo=logInfo,subFolder='foldResult')
     
-    return prf1Dict
+    return prf1Dict,model
 
 def lgbm(xtrain:np.array,
        ytrain:np.array,
        xtest:np.array,
        ytest:np.array,
-       random_state:int, suffix='',tag=False, logInfo=False)->dict:
+       random_state:int, suffix='',tag=False, logInfo=False,
+       best_params:dict=None)->dict:
     '''
     用于单次调用机器学习模型, 主要用于kfold_model调用
     '''
     from lightgbm import LGBMClassifier as LGBMC
     from sklearn.metrics import roc_curve
     d = {'model':'LGBM','suffix':'resultLGBM','l':'LightGBM'}
-    model = LGBMC(num_leaves=60,
-                      learning_rate=0.05,
-                      n_estimators=100,
-                      class_weight='balanced',
-                      random_state=random_state).fit(xtrain, ytrain)
+    if best_params is not None:
+        model = LGBMC(**best_params).fit(xtrain, ytrain)
+    else:
+        model = LGBMC(num_leaves=60,
+                        learning_rate=0.05,
+                        n_estimators=100,
+                        class_weight='balanced',
+                        random_state=random_state).fit(xtrain, ytrain)
     ypre = model.predict(xtest)
     yprob = model.predict_proba(xtest)[:, 1]
 #     me.plot_ROC(yprob, ytest, l = d['l'],logInfo=False)
@@ -91,13 +99,14 @@ def lgbm(xtrain:np.array,
         if 'fold' in tag.keys() and bool(logInfo): # 如果传入fold字段, 则将保存模型的预测数据
             dataDict = {'ytest':ytest.reshape(-1), 'ypre':ypre.reshape(-1), 'yprob':yprob.reshape(-1)}
             dp.save_csv(df=pd.DataFrame(dataDict), suffix=suffix+'_{}_fold{}'.format(d['model'],tag['fold']),logInfo=logInfo,subFolder='foldResult')
-    return prf1Dict
+    return prf1Dict,model
 
 def xgb(xtrain:np.array,
        ytrain:np.array,
        xtest:np.array,
        ytest:np.array,
-       random_state:int, suffix='', tag=False,logInfo=False)->dict:
+       random_state:int, suffix='', tag=False,logInfo=False,
+       best_params:dict=None)->dict:
     '''
     用于单次调用机器学习模型, 主要用于kfold_model调用
     只有在tag字段中传入包含fold键值对和logInfo, 才会保存模型的预测数据, 即ytest, ypre, yprob
@@ -105,15 +114,18 @@ def xgb(xtrain:np.array,
     from xgboost import XGBRFClassifier as XGBC
     from sklearn.metrics import roc_curve
     d = {'model':'XGB','suffix':'resultXGB','l':'XGBoost'}
-    model = XGBC(n_estimators =100,
-                         random_state=random_state,
-                         learning_rate=0.1,
-                         booster='gbtree',
-                         objective='reg:logistic'
-                        #  is_unbalance=True,
-                        #  scale_pos_weight=len(ytest)/sum(ytrain)
-                         #silent=False
-                    ).fit(xtrain,ytrain)
+    if best_params is not None:
+        model = XGBC(**best_params).fit(xtrain, ytrain)
+    else:
+        model = XGBC(n_estimators =100,
+                            random_state=random_state,
+                            learning_rate=0.1,
+                            booster='gbtree',
+                            objective='reg:logistic'
+                            #  is_unbalance=True,
+                            #  scale_pos_weight=len(ytest)/sum(ytrain)
+                            #silent=False
+                        ).fit(xtrain,ytrain)
     ypre = model.predict(xtest)
     yprob = model.predict_proba(xtest)[:, 1]
 #     me.plot_ROC(yprob, ytest, l = d['l'],logInfo=False)
@@ -127,7 +139,7 @@ def xgb(xtrain:np.array,
         if 'fold' in tag.keys() and bool(logInfo): # 如果传入fold字段, 则将保存模型的预测数据
             dataDict = {'ytest':ytest.reshape(-1), 'ypre':ypre.reshape(-1), 'yprob':yprob.reshape(-1)}
             dp.save_csv(df=pd.DataFrame(dataDict), suffix=suffix+'_{}_fold{}'.format(d['model'],tag['fold']),logInfo=logInfo,subFolder='foldResult')
-    return prf1Dict
+    return prf1Dict,model
 
 def lr(xtrain:np.array,
        ytrain:np.array,
@@ -154,9 +166,8 @@ def lr(xtrain:np.array,
         if 'fold' in tag.keys() and bool(logInfo): # 如果传入fold字段, 则将保存模型的预测数据
             dataDict = {'ytest':ytest.reshape(-1), 'ypre':ypre.reshape(-1), 'yprob':yprob.reshape(-1)}
             dp.save_csv(df=pd.DataFrame(dataDict), suffix=suffix+'_{}_fold{}'.format(d['model'],tag['fold']),logInfo=logInfo,subFolder='foldResult')
-            
-    
-    return prf1Dict
+        
+    return prf1Dict,model
 
 def nb(xtrain:np.array,
        ytrain:np.array,
@@ -186,7 +197,7 @@ def nb(xtrain:np.array,
     
     return prf1Dict
 
-def model_voting(xtrain:np.array, ytrain:np.array, xtest:np.array, ytest:np.array,bestPara:dict={},
+def model_voting(xtrain:np.array, ytrain:np.array, xtest:np.array, ytest:np.array,bestPara:dict,
                 random_state:int=42, modelList:list=['RF','LGBM','XGB'],voting:str='soft', suffix='',tag=False,logInfo=False)->dict:
     '''
     bestPara:{'RF': RandomForestClassifier{'max_depth': 8, 'n_estimators': 100}} 直接保存的是模型
@@ -202,23 +213,29 @@ def model_voting(xtrain:np.array, ytrain:np.array, xtest:np.array, ytest:np.arra
     nbVote = GaussianNB()
 
     from sklearn.ensemble import RandomForestClassifier, VotingClassifier
-    rfVote = RandomForestClassifier(n_estimators=100,
-                                class_weight='balanced',
-                                random_state=random_state)
     if 'RF' in bestPara.keys():
         rfVote=bestPara['RF']
+    else:
+        rfVote = RandomForestClassifier(n_estimators=100,
+                                class_weight='balanced',
+                                random_state=random_state)
+
 
     from lightgbm import LGBMClassifier as LGBMC
-    lgbmVote = LGBMC(num_leaves=60,
+    if 'LGBM' in bestPara.keys():
+        lgbmVote=bestPara['LGBM']
+    else:
+        lgbmVote = LGBMC(num_leaves=60,
                         learning_rate=0.05,
                         n_estimators=100,
                         class_weight='balanced',
                         random_state=random_state)    
-    if 'LGBM' in bestPara.keys():
-        lgbmVote=bestPara['LGBM']
 
     from xgboost import XGBClassifier as XGBMC
-    xgbVote = XGBMC(n_estimators =150,
+    if 'XBG' in bestPara.keys():
+        xgbVote=bestPara['XGB']
+    else:
+        xgbVote = XGBMC(n_estimators =150,
                         random_state=random_state,
                         learning_rate=0.1,
                         booster='gbtree',
@@ -227,8 +244,6 @@ def model_voting(xtrain:np.array, ytrain:np.array, xtest:np.array, ytest:np.arra
                         n_jobs=-1,
                         scale_pos_weight=(len(ytrain)/sum(ytrain)).item()
                 )
-    if 'XBG' in bestPara.keys():
-        xgbVote=bestPara['XGB']
     # TODO: 应用ensemble.named_estimators_['lrVote'].predict_proba(xtest)或者predict获取模型预测结果，并将结果拼起来
     # TODO: 应用combinations函数取modelList的组合，并将结果拼起来
     # for model in combinations(estList,2): # 将模型列表中的模型组合成两两组合
@@ -254,7 +269,7 @@ def model_voting(xtrain:np.array, ytrain:np.array, xtest:np.array, ytest:np.arra
     return prf1Dict,dataDict,ensembleModel
 
 ### =======================单模型 kfold======================
-def rf_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fold=5,gridSearch=False)->pd.DataFrame:
+def rf_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fold=5,gridSearch=False,bestPara=None)->pd.DataFrame:
     '''
     description: 
     param {pd} xDF: 
@@ -269,15 +284,24 @@ def rf_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fo
     from sklearn.metrics import roc_curve
 
     #gridSearch
-    if gridSearch:
+    if gridSearch and bestPara is None:
         print('Grid Searching, please wait...')
         from sklearn.model_selection import GridSearchCV 
         param_grid = {'n_estimators': range(50,150,20),'max_depth':range(4,8)}
 
         GCV = GridSearchCV(RandomForestClassifier(random_state=random_state), param_grid, scoring='roc_auc', n_jobs=-1, cv=fold, verbose=0)
         GCV.fit(np.array(xDF), np.array(yDF))
-        print('Best parameters found by grid search are:', GCV.best_params_)
-        # TODO: 保存网格搜索的结果
+        bestModel = GCV.best_estimator_
+
+        print('Best parameters found by grid search are:', GCV.best_estimator_)
+    elif bestPara is not None:
+        bestModel = RandomForestClassifier(**bestPara)
+        print('Got best para from bestPara without Grid Search',bestModel)
+    else:
+        bestModel = RandomForestClassifier(n_estimators=100,
+                                       class_weight='balanced',
+                                       random_state=random_state)
+        print('using default parameters: ',bestModel) 
 
     d = {'model':'RF','suffix':'resultRF','l':'Random Forest'}
     skfolds = StratifiedKFold(n_splits=fold, shuffle=True, random_state=random_state)
@@ -294,11 +318,8 @@ def rf_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fo
         ytrain = yDF.iloc[train_index]
         xtest = xDF.iloc[test_index, :]
         ytest = yDF.iloc[test_index]
-        if gridSearch:
-            model = GCV.best_estimator_.fit(np.array(xtrain), np.array(ytrain))
-        else:
-            model = RandomForestClassifier(n_estimators=100,random_state=random_state).fit(np.array(xtrain), np.array(ytrain))
-        ypre = model.predict(np.array(xtest))
+
+        model = bestModel.fit(np.array(xtrain), np.array(ytrain))
         yprob = model.predict_proba(np.array(xtest))[:, 1]
 
         fpr, tpr, thr = roc_curve(ytest, yprob)
@@ -322,7 +343,7 @@ def rf_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fo
         dp.save_csv(pd.DataFrame(prf1List), logInfo=logInfo, suffix=d['suffix'],fileName=False)
         dp.save_csv(logDF, logInfo=logInfo, suffix='log_'+d['suffix'],fileName=False) #TODO: test
 
-    return pd.DataFrame(prf1List),GCV.best_params_ if gridSearch else None
+    return pd.DataFrame(prf1List),model
 
 
 def lr_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fold=5)->pd.DataFrame:
@@ -372,10 +393,10 @@ def lr_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fo
     me.plot_ROC_kfold(tprs, opts, l=d['l'],logInfo=logInfo)
     if bool(logInfo):
         dp.save_csv(pd.DataFrame(prf1List), logInfo=logInfo, suffix=d['suffix'],fileName=False)
-    return pd.DataFrame(prf1List)
+    return pd.DataFrame(prf1List),model
 
 
-def lgbm_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fold=5,gridSearch=False)->pd.DataFrame:
+def lgbm_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fold=5,gridSearch=False,bestPara:dict=None)->pd.DataFrame:
     '''
     description: 
     param {pd} xDF: 
@@ -393,12 +414,19 @@ def lgbm_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,
     if gridSearch:
         print('Grid Searching, please wait...')
         from sklearn.model_selection import GridSearchCV 
-        param_grid = {'n_estimators': range(50,150,20),'max_depth':range(4,8),'learning_rate':[0.02,0.05,0.08]}
+        param_grid = {'n_estimators': range(20,150,30),'learning_rate':[0.1,0.05,0.02],
+                    'max_depth':range(4,8,2),'num_leaves':range(10,50,15),'min_child_samples':range(10,50,15) }
 
-        GCV = GridSearchCV(LGBMC(random_state=random_state), param_grid, scoring='roc_auc', n_jobs=-1, cv=fold, verbose=0)
+        GCV = GridSearchCV(LGBMC(random_state=random_state,is_unbalance=True), param_grid, scoring='roc_auc', n_jobs=-1, cv=fold, verbose=0)
         GCV.fit(np.array(xDF), np.array(yDF))
-        print('Best parameters found by grid search are:', GCV.best_params_)
-        # TODO: 保存网格搜索的结果
+        bestModel = GCV.best_estimator_
+        print('Best parameters found by grid search are:', GCV.best_estimator_)
+    elif bestPara is not None:
+        bestModel = LGBMC(**bestPara)
+        print('Got best para from bestPara without Grid Search',bestModel)
+    else:
+        bestModel = LGBMC(num_leaves=30,max_depth=6,learning_rate=0.05,n_estimators=150)
+        print('using default parameters: ',bestModel) 
 
     d = {'model':'LGBM','suffix':'resultLGBM','l':'LightGBM'}
     skfolds = StratifiedKFold(n_splits=fold, shuffle=True, random_state=random_state)
@@ -416,11 +444,7 @@ def lgbm_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,
         xtest = xDF.iloc[test_index, :]
         ytest = yDF.iloc[test_index]
         
-        if gridSearch:
-            model = GCV.best_estimator_.fit(np.array(xtrain), np.array(ytrain))
-        else:
-            model = LGBMC(num_leaves=30,max_depth=6,learning_rate=0.05,n_estimators=150).fit(np.array(xtrain), np.array(ytrain))
-
+        model = bestModel.fit(np.array(xtrain), np.array(ytrain))
         ypre = model.predict(np.array(xtest))
         yprob = model.predict_proba(np.array(xtest))[:, 1]
 
@@ -437,10 +461,10 @@ def lgbm_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,
     me.plot_ROC_kfold(tprs, opts, l=d['l'],logInfo=logInfo)
     if bool(logInfo):
         dp.save_csv(pd.DataFrame(prf1List), logInfo=logInfo, suffix=d['suffix'],fileName=False)
-    return pd.DataFrame(prf1List),GCV.best_params_ if gridSearch else None
+    return pd.DataFrame(prf1List),model
 
 
-def xgb_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fold=5,gridSearch=False)->pd.DataFrame:
+def xgb_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,fold=5,gridSearch=False,bestPara:dict=None)->pd.DataFrame:
     '''
     description: 
     param {pd} xDF: 
@@ -463,8 +487,16 @@ def xgb_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,f
         GCV = GridSearchCV(XGBC(random_state=random_state,booster='gbtree',objective='reg:logistic'), 
                            param_grid, scoring='roc_auc', n_jobs=-1, cv=fold, verbose=0)
         GCV.fit(np.array(xDF), np.array(yDF))
-        print('Best parameters found by grid search are:', GCV.best_params_)
-        # TODO: 保存网格搜索的结果
+        bestModel = GCV.best_estimator_
+        print('Best parameters found by grid search are:', GCV.best_estimator_)
+    elif bestPara is not None:
+        bestModel = XGBC(**bestPara)
+        print('Got best para from bestPara without Grid Search',bestModel)
+    else:
+        bestModel = XGBC(n_estimators =100,learning_rate=0.1,booster='gbtree',objective='reg:logistic',
+                     random_state=random_state,
+                    )
+        print('using default parameters: ',bestModel) 
 
     d = {'model':'XGB','suffix':'resultXGB','l':'XGBoost'}
     skfolds = StratifiedKFold(n_splits=fold, shuffle=True, random_state=random_state)
@@ -482,12 +514,7 @@ def xgb_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,f
         xtest = xDF.iloc[test_index, :]
         ytest = yDF.iloc[test_index]
 
-        if gridSearch:
-            model = GCV.best_estimator_.fit(np.array(xtrain), np.array(ytrain))
-        else:
-            model = XGBC(n_estimators =100,learning_rate=0.1,booster='gbtree',objective='reg:logistic',
-                     random_state=random_state,
-                    ).fit(np.array(xtrain), np.array(ytrain))
+        model = bestModel.fit(np.array(xtrain), np.array(ytrain))
         ypre = model.predict(np.array(xtest))
         yprob = model.predict_proba(np.array(xtest))[:, 1]
 
@@ -504,7 +531,7 @@ def xgb_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,logInfo=False,f
     me.plot_ROC_kfold(tprs, opts, l=d['l'],logInfo=logInfo)
     if bool(logInfo):
         dp.save_csv(pd.DataFrame(prf1List), logInfo=logInfo, suffix=d['suffix'],fileName=False)
-    return pd.DataFrame(prf1List),GCV.best_params_ if gridSearch else None
+    return pd.DataFrame(prf1List),model
 
 
 def svm_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,tag=False,logInfo=False,fold=5)->pd.DataFrame:
@@ -569,7 +596,7 @@ def muti_model(xtrain:np.array,
                 xtest:np.array,
                 ytest:np.array,
                 tag:dict,
-                random_state:int,suffix='',logInfo=False) -> dict:
+                random_state:int,suffix='',logInfo=False,best_para=None) -> dict:
     '''
     description: 通过传入划分好的测试集和训练集, 对数据进行多模型建模和验证
     param {np.array} xtrain, ytrain, xtest, ytest <- skearn.model_selection.KFold().split(X,Y) !! 注意顺序不同 !!
@@ -604,18 +631,69 @@ def muti_model(xtrain:np.array,
     me.plot_ROC_kmodel(kmodel,logInfo)
     '''
     prf1List=[]
-    prf1List.append(rf(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix))
-    prf1List.append(lgbm(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix))
-    prf1List.append(xgb(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix))
-    prf1List.append(lr(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix))
-    prf1List.append(model_voting(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix)[0])
+    if best_para is None:
+        prf1List.append(rf(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix)[0])
+        prf1List.append(lgbm(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix)[0])
+        prf1List.append(xgb(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix)[0])
+        prf1List.append(lr(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix)[0])
+        prf1List.append(model_voting(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix)[0])
+    else:
+        prf1List.append(rf(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix,best_params=best_para['RF'].get_params())[0])
+        prf1List.append(lgbm(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix,best_params=best_para['LGBM'].get_params())[0])
+        prf1List.append(xgb(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix,best_params=best_para['XGB'].get_params())[0])
+        prf1List.append(lr(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix)[0])
+        prf1List.append(model_voting(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo,suffix=suffix,bestPara=best_para)[0])
     return prf1List
+
+def get_best_model(xtrain:np.array,
+                    ytrain:np.array,
+                    random_state:int=0,
+                    ) -> dict:
+    
+    '''
+    description: 通过传入划分好的测试集和训练集, 对数据进行多模型建模和验证
+    param {np.array} xtrain, ytrain, xtest, ytest <- skearn.model_selection.KFold().split(X,Y) !! 注意顺序不同 !!
+    param {dict | None} tag: 自定义传入结果字典的标签
+
+    --------example:-----------
+    '''
+    from sklearn.model_selection import GridSearchCV 
+
+    bestPara={}
+    print('Grid Searching, please wait...')
+
+    # RF
+    from sklearn.ensemble import RandomForestClassifier
+    param_grid = {'n_estimators': range(50,150,20),'max_depth':range(4,8)}
+    GCV = GridSearchCV(RandomForestClassifier(random_state=random_state), param_grid, scoring='roc_auc', n_jobs=-1, cv=5, verbose=0)
+    GCV.fit(np.array(xtrain), np.array(ytrain))
+    print('RF：Best parameters found by grid search are:', GCV.best_params_,'AUC',GCV.best_score_)
+    bestPara['RF']=GCV.best_estimator_
+
+    # LGBM
+    from lightgbm import LGBMClassifier as LGBMC
+    param_grid = {'n_estimators': range(20,150,30),'learning_rate':[0.1,0.05,0.02],
+                    'max_depth':range(4,8,2),'num_leaves':range(10,50,15),'min_child_samples':range(10,50,15) }
+    GCV = GridSearchCV(LGBMC(random_state=random_state), param_grid, scoring='roc_auc', n_jobs=-1, cv=5, verbose=0)
+    GCV.fit(np.array(xtrain), np.array(ytrain))
+    print('LGBM：Best parameters found by grid search are:', GCV.best_params_,'AUC:',GCV.best_score_)
+    bestPara['LGBM']=GCV.best_estimator_
+    
+    # XGB
+    from xgboost import XGBClassifier as XGBMC
+    param_grid = {'n_estimators': range(50,150,20),'max_depth':range(4,8),'learning_rate':[0.02,0.05,0.08]}
+    GCV = GridSearchCV(XGBMC(random_state=random_state), param_grid, scoring='roc_auc', n_jobs=-1, cv=5, verbose=0)
+    GCV.fit(np.array(xtrain), np.array(ytrain))
+    print('XGB：Best parameters found by grid search are:', GCV.best_params_,'AUC:',GCV.best_score_)
+    bestPara['XGB']=GCV.best_estimator_
+
+    return bestPara
 
 
 
 
 # =============================最终封装函数==========================
-def model_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,tag=False,kfold=5,logInfo=False,suffix=''):
+def model_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,tag=False,kfold=5,logInfo=False,suffix='',gridSearch=False):
     '''
     description: 调用多个模型的n折交叉验证结果, 并将ROC和结果保存, 单独调用可见muti_model
     param {np} xDF: 
@@ -634,6 +712,8 @@ def model_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,tag=False,kfo
     kf = KFold(n_splits=kfold, shuffle=True, random_state=random_state).split(xDF, yDF)
     fold=1
     prf1DF=pd.DataFrame()
+    got_best_para=False
+
 
     for train_index, test_index in kf:
         xtrain = np.array(xDF.iloc[train_index, :])
@@ -641,10 +721,21 @@ def model_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,tag=False,kfo
         xtest = np.array(xDF.iloc[test_index, :])
         ytest = np.array(yDF.iloc[test_index]).reshape(-1,1)
         print('=========={}-Cross Validation: Fold {}==========='.format(kfold,fold))
+        
+        # 如果放在循环外面，相当于看了所有的数据，会数据泄露。
+        if gridSearch==False:
+            bestPara = None
+        elif got_best_para==False:
+            bestPara = get_best_model(xtrain,ytrain,random_state=random_state)
+            got_best_para=True
+        else:
+            pass
+            
         # OTHER CODE
+        # TODO: 1. 传入的参数可以是一个字典，包含所有的参数，然后在函数内部进行解包
 
         prf1Dict = muti_model(xtrain,ytrain.reshape(-1,1),xtest,ytest.reshape(-1,1),
-                                tag={'fold':fold},random_state=random_state,logInfo=logInfo)
+                                tag={'fold':fold},random_state=random_state,logInfo=logInfo,best_para=bestPara)
 
         # 便于后续调试和添加内容
         # prf1_rf   = ml.rf(xtrain,ytrain,xtest,ytest,tag=tag,random_state=random_state,logInfo=logInfo)
@@ -660,13 +751,14 @@ def model_kfold(xDF:pd.DataFrame,yDF:pd.DataFrame,random_state:int,tag=False,kfo
         prf1DF = pd.concat([prf1DF,pd.DataFrame(prf1Dict)])
         fold +=1
 
-    group = prf1DF.groupby('model')
+
+    # group = prf1DF.groupby('model')
 
     # 直接从log中读取文件，并用该数据绘制多模型ROC
     tPath = os.path.join(logInfo['logPath'], 'foldResult', str(logInfo['hour']))
 
     kmodel = {'TPR_MEAN': [], 'TPR_STD': [], 'OPTS': [], 'L': []}
-    for model in ['LGBM', 'XGB', 'RF', 'RF_LGBM_XGB']:
+    for model in ['LGBM', 'XGB', 'RF', 'RF_LGBM_XGB','LR']:
         tprs = []
         for i in range(kfold):
             f = pd.read_csv('{}_{}_fold{}.csv'.format(tPath,model,i+1))
