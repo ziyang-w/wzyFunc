@@ -2,4 +2,4 @@ __pycache__
 .DS_Store
 build
 dist
-*.egg-info
+wzyFunc.egg-info
