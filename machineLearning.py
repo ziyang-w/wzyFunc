@@ -152,7 +152,9 @@ def lr(xtrain:np.array,
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import roc_curve
     d = {'model':'LR','suffix':'resultLR','l':'Logistic Regression'}
-    model = LogisticRegression(max_iter=1000, class_weight='auto').fit(xtrain,ytrain)
+    model = LogisticRegression(max_iter=1000 
+                            #    class_weight='auto'
+            ).fit(xtrain,ytrain)
     ypre = model.predict(xtest)
     yprob = model.predict_proba(xtest)[:, 1]
 #     me.plot_ROC(yprob, ytest, l = d['l'],logInfo=False)
@@ -197,7 +199,7 @@ def nb(xtrain:np.array,
     
     return prf1Dict
 
-def model_voting(xtrain:np.array, ytrain:np.array, xtest:np.array, ytest:np.array,bestPara:dict,
+def model_voting(xtrain:np.array, ytrain:np.array, xtest:np.array, ytest:np.array,bestPara:dict={},
                 random_state:int=42, modelList:list=['RF','LGBM','XGB'],voting:str='soft', suffix='',tag=False,logInfo=False)->dict:
     '''
     bestPara:{'RF': RandomForestClassifier{'max_depth': 8, 'n_estimators': 100}} 直接保存的是模型

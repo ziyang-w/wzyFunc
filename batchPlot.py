@@ -35,7 +35,12 @@ def plot_hist(df,tdAnova,log_path, suffix=''):
     plot_path = os.path.join(log_path,'plot',plotType)
 
     for h in tqdm(tdAnova):
-        sns.displot(data=df,x=h,kind = 'hist',kde=True,bins=24)
+        try:
+            sns.displot(data=df,x=h,kind = 'hist',kde=True,bins=24)
+        except Exception as e:
+            print('error in plot_hist: {}'.format(h))
+            print(e)
+            continue
         plt.savefig(os.path.join(plot_path,'%s_%s.pdf'%(plotType,h)),dpi=200)
         plt.close() 
     print('plot save in {}'.format(plot_path))
@@ -55,8 +60,13 @@ def plot_classHist(df,tdAnova,tdChi,log_path,suffix=''):
     plot_path = os.path.join(log_path,'plot',plotType)
 
     for ydata in tqdm(tdAnova):
-        for cls in tdChi:    
-            sns.displot(data=df,hue=cls,x=ydata,kind='hist',kde=True)
+        for cls in tdChi:  
+            try:  
+                sns.displot(data=df,hue=cls,x=ydata,kind='hist',kde=True)
+            except Exception as e:
+                print('error in plot_classHist: {}_{}'.format(cls,ydata))
+                print(e)
+                continue
             plt.savefig(os.path.join(plot_path,'%s_%s_%s.pdf'%(plotType,ydata,cls)),dpi=200)
             plt.close()
     print('plot save in {}'.format(plot_path))
@@ -76,7 +86,12 @@ def plot_joint(df,tdAnova,log_path, suffix=''):
                                 
     from itertools import combinations
     for item in tqdm(list(combinations(tdAnova,2))):
-        sns.jointplot(data=df,x=item[0],y=item[1],kind='hex')
+        try:
+            sns.jointplot(data=df,x=item[0],y=item[1],kind='hex')
+        except Exception as e:
+            print('error in plot_joint: {}'.format(item))
+            print(e)
+            continue
         plt.savefig(os.path.join(plot_path,'%s_%s_%s.pdf'%(plotType,item[0],item[1])),dpi=200)
         plt.close()
     print('plot save in {}'.format(plot_path))
@@ -97,7 +112,12 @@ def plot_count(df,tdChi,tr,log_path, suffix=''):
                                 
     for targetResult in tqdm(tr):
         for cls in tdChi:
-            sns.catplot(data=df,hue=cls,x=targetResult,kind='count')
+            try:
+                sns.catplot(data=df,hue=cls,x=targetResult,kind='count')
+            except Exception as e:
+                print('error in plot_count: {}_{}'.format(targetResult,cls))
+                print(e)
+                continue
             plt.savefig(os.path.join(plot_path,'%s_%s_%s.pdf'%(plotType,targetResult,cls)),dpi=200)
             plt.close()
     print('plot save in {}'.format(plot_path))
@@ -121,7 +141,12 @@ def plot_violin(df,tdAnova,tr,log_path,suffix='',tdChi=False):
         for targetResult in tqdm(tr):
             for cls in tdChi:
                 for ydata in tdAnova:
-                    sns.catplot(data=df,hue=cls,x=targetResult,y=ydata,kind='violin',palette="pastel")
+                    try:
+                        sns.catplot(data=df,hue=cls,x=targetResult,y=ydata,kind='violin',palette="pastel")
+                    except Exception as e:
+                        print('erroe in plot_violin: {}_{}_{}'.format(cls,targetResult,ydata))
+                        print(e)
+                        continue
                     plt.savefig(os.path.join(plot_path,'%s_%s_%s_%s.pdf'%(plotType,targetResult,ydata,cls)),dpi=200)
                     plt.close() # 很重要，不然会导致内存泄漏
     else:
@@ -142,5 +167,10 @@ def plot_ratio_heatmap(df,tdAnova,tr,log_info,sigma=3,suffix=''):
     from calPlot import ratio_heatmap
     
     for item in tqdm(combinations(tdAnova,2)):
-        ratio_heatmap(df,y=item[0],x=item[1],tr=tr,bins='auto',log_info=log_info,sigma=sigma)
+        try:
+            ratio_heatmap(df,y=item[0],x=item[1],tr=tr,bins='auto',log_info=log_info,sigma=sigma)
+        except Exception as e:
+            print('error in plot_joint: {}_{}'.format(item,tr))
+            print(e)
+            continue
     print('plot save in {}'.format(os.path.join(log_info['logPath'],'plot','heatmap'+suffix)))
