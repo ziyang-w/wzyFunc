@@ -5,7 +5,7 @@ setup(
     version='0.1',
     author='Ziyang Wang',
     author_email='ziyangw@yeah.net',
-    description='My Python Package',
+    description='wzyFunction',
     packages=find_packages(),
     install_requires=[
         'numpy>=1.18.0',

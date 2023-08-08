@@ -1,5 +1,14 @@
 README.md
 setup.py
+wzyFunc/__init__.py
+wzyFunc/batchPlot.py
+wzyFunc/calPlot.py
+wzyFunc/calStats.py
+wzyFunc/dataPrep.py
+wzyFunc/deepLearning.py
+wzyFunc/machineLearning.py
+wzyFunc/modelEvaluation.py
+wzyFunc/msAuto.py
 wzyFunc.egg-info/PKG-INFO
 wzyFunc.egg-info/SOURCES.txt
 wzyFunc.egg-info/dependency_links.txt
