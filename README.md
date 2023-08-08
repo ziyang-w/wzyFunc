@@ -4,7 +4,7 @@
  * @Author: ziyang-W, ziyangw@yeah.net
  * @Co.: IMICAMS
  * @Date: 2022-06-20 01:36:45
- * @LastEditTime: 2023-08-08 14:57:45
+ * @LastEditTime: 2023-08-08 16:18:18
  * Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 -->
 # 介绍
@@ -25,10 +25,75 @@
 # TODO：
 - [ ] 介绍各个模块内函数的作用和调用逻辑
 - [ ] 完善深度学习的模块
-- [ ] 完善机器学习模型调优的模块代码
-- [ ] 完善机器学习模型的交叉验证模块
 - [ ] 补充模块之间的摘要图
+
+## Python 包提交流程
+
+* **编写setup.py**
+
+    1. 包名称中亿数字+字母为主，最多出现`-`，其他的字符都可能会导致安装失败的问题
+
+```python
+from setuptools import setup, find_packages
+
+setup(
+    name='my_package',
+    version='0.1',
+    author='Your Name',
+    author_email='your_email@example.com',
+    description='My Python Package',
+    packages=find_packages(),
+    install_requires=[
+        'numpy>=1.18.0',
+        'pandas>=1.0.0'
+    ]
+)
+```
+
+* **添加亿点点细节**
+
+    1. LICENSE.txt，可以从[license网站中下载](https://choosealicense.com/)
+
+    1. 其他的细节，可以[点击查看CSDN笔记](https://blog.csdn.net/qq_27884799/article/details/96664812)
+
+
+* **打包发布**
+
+```SH 
+python setup.py dist bdist_wheel
+```
+
+该命令将会生成`.tar.gz`和`.whl`两个格式的包文件，分别存放在`dist`目录下。
+
+* **在[PyPI注册账号](https://pypi.org/)**
+
+创建PyPI账号后，在`Account Settings`中按照要求设置`Recover codes`与2FA验证，iOS设备可以从APP Store中下载`Duo`软件进行扫码验证。TestPyPI与PyPI，可以仅注册PyPI即可，直接将包上传到PyPI中，但建议在上传前在本地进行测试。
+
+设置了2FA验证后，提交包的密码不知道是哪个，一会儿要求原密码，一会儿要求2FA密码。很容易报错`Invalid or non-existent authentication information`，所以推荐设置API tokens的方式进行提交。
+
+* **添加API tokens**
+
+在`Account Settings`中，找到`Add API token`，按照要求在当前操作系统的用户目录下新建`.pypirc`文件。
+
+Windows可以在cmd中运行`echo. > .pypirc`，然后在用记事本打开。
+
+Linux 直接`vim ~/.pypirc`，将生成的Token复制进去，`:wq`结束
+
+`.pypirc`样例如下：
+```
+[distutils]
+index-servers=pypi
+
+[pypi]
+  username = __token__
+  password = pypi-GENERATED_API_TOKEN
+  
+```
+
+
+
 
 
 # REFERENCE
-[Python打包流程](https://zhuanlan.zhihu.com/p/609180587)
+
+[Python极简打包流程](https://zhuanlan.zhihu.com/p/609180587)
