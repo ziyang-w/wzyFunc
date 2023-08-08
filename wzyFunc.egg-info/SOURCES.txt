@@ -1,0 +1,7 @@
+README.md
+setup.py
+wzyFunc.egg-info/PKG-INFO
+wzyFunc.egg-info/SOURCES.txt
+wzyFunc.egg-info/dependency_links.txt
+wzyFunc.egg-info/requires.txt
+wzyFunc.egg-info/top_level.txt
