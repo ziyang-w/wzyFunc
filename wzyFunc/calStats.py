@@ -138,8 +138,8 @@ def cal_chi_result(dataSet:pd.DataFrame, tcol:list, trow:list, general=False, be
             tableDict = pd.crosstab(
                 spDF[tda], spDF[r], margins=True, margins_name='Total')
             percent = pd.crosstab(
-                # spDF[tda], spDF[r], margins=True, normalize='index', margins_name='Total') # index横着求和，计算得到的是分间的百分比，无意义
-                spDF[tda], spDF[r], margins=True, normalize='columns', margins_name='Total') # columns竖着求和，计算得到的是分组内的百分比
+                spDF[tda], spDF[r], margins=True, normalize='index', margins_name='Total') # index横着求和，计算得到的是分间的百分比，无意义
+                # spDF[tda], spDF[r], margins=True, normalize='columns', margins_name='Total') # columns竖着求和，计算得到的是分组内的百分比
 
             if fisher:
                 chi2 = round(stats.fisher_exact(tableDict.iloc[:-1,:-1])[0],2) #[1]:chi2,[2]:df
@@ -160,8 +160,13 @@ def cal_chi_result(dataSet:pd.DataFrame, tcol:list, trow:list, general=False, be
             if beauty:
                 ###====下面内容为优化表格====####
                 #               #将百分数添加到字段后面
+                # 按照index求和计算的方式
                 tableDict.iloc[:, :-3] = tableDict.iloc[:, :-3]\
                         .astype(str)+'('+(percent.iloc[:, :]*100).round(1).astype(str)+'%)'
+
+                # 按照columns求和计算的方式
+                # tableDict.iloc[:-1, :-2] = tableDict.iloc[:-1, :-2]\
+                #         .astype(str)+'('+(percent.iloc[:, :]*100).round(1).astype(str)+'%)'
                 # 在为小表格添加一个新行
 #                 pd.concat([pd.DataFrame(['随便写点儿什么'],index=[tda],columns=['rp']), tableDict]).drop('rp',axis=1)
                 # 不能删掉赋值，不然pandas会默认将全部为空的行删掉
@@ -179,7 +184,7 @@ def cal_chi_result(dataSet:pd.DataFrame, tcol:list, trow:list, general=False, be
     return ChiDF
 
 
-def cal_stratify_chi_result(dataSet,tcol,trow,stratify,fisher=False,general =False,beauty=True,showP=True):
+def cal_stratify_chi_result(dataSet:pd.DataFrame,tcol:list,trow:list,stratify:str,fisher=False,general =False,beauty=True,showP=True):
     '''
     计算分组卡方,对stratify计算整体的卡方检验,然后在每个分组内再进行卡方检验
     tcol:行列表的C,最后生成该列的卡方p值,一般为targetY
@@ -196,7 +201,7 @@ def cal_stratify_chi_result(dataSet,tcol,trow,stratify,fisher=False,general =Fal
         l=pd.DataFrame()
         for tda in trow:
             sTableDict = pd.crosstab(index=[spDF[stratify], spDF[tda]],columns = spDF[r],margins=True,margins_name='Total')
-            sPercent = pd.crosstab(index=[spDF[stratify], spDF[tda]],columns = spDF[r],margins=True,normalize='columns',margins_name='Total')
+            sPercent = pd.crosstab(index=[spDF[stratify], spDF[tda]],columns = spDF[r],margins=True,normalize='index',margins_name='Total')
             
 #             print(sTableDict.index)
             S=pd.DataFrame()
@@ -206,8 +211,10 @@ def cal_stratify_chi_result(dataSet,tcol,trow,stratify,fisher=False,general =Fal
                 percent = sPercent.loc[s]
 
                 if fisher:
+                    chi2 = round(stats.fisher_exact(tableDict.iloc[:-1,:-1])[0],2) #[1]:chi2,[2]:df
                     pvalue = stats.fisher_exact(tableDict.iloc[:-1,:-1])[1] #[1]:chi2,[2]:df
                 else:
+                    chi2 = round(stats.chi2_contingency(tableDict.iloc[:-1,:-1])[0],2) #[1]:chi2,[2]:df
                     pvalue = stats.chi2_contingency(tableDict.iloc[:-1,:-1])[1] #[1]:chi2,[2]:df
 
                 if showP:
@@ -216,12 +223,21 @@ def cal_stratify_chi_result(dataSet,tcol,trow,stratify,fisher=False,general =Fal
                     beautyP = 'p<0.001' if pvalue < 0.001 else round(pvalue, 4)
 
                 
+                tableDict[r+'-chi'] = chi2
                 tableDict[r+'-p'] = beautyP
 
                 if beauty:
                     ###====下面内容为优化表格====####
     #               #将百分数添加到字段后面
-                    tableDict.iloc[:,:-2] = tableDict.iloc[:,:-2].astype(str)+'('+(percent.iloc[:,:]*100).round(1).astype(str)+'%)'
+                    tableDict.iloc[:,:-3] = tableDict.iloc[:,:-3].astype(str)+'('+(percent.iloc[:,:]*100).round(1).astype(str)+'%)'
+
+                    # 按照index求和计算的方式
+                    # tableDict.iloc[:, :-3] = tableDict.iloc[:, :-3]\
+                    #         .astype(str)+'('+(percent.iloc[:, :]*100).round(1).astype(str)+'%)'
+
+                    # 按照columns求和计算的方式
+                    # tableDict.iloc[:, :-2] = tableDict.iloc[:, :-2]\
+                    #         .astype(str)+'('+(percent.iloc[:, :]*100).round(1).astype(str)+'%)'
                     # 在为小表格添加一个新行
     #                 pd.concat([pd.DataFrame(['随便写点儿什么'],index=[tda],columns=['rp']), tableDict]).drop('rp',axis=1)
                     tableDict.loc[s,r+'-p'] = beautyP # 不能删掉赋值，不然pandas会默认将全部为空的行删掉
