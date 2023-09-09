@@ -4,7 +4,7 @@ version: 0.2
 Author: ziyang-W, ziyangw@yeah.net
 Co.: IMICAMS
 Date: 2022-05-09 22:52:23
-LastEditTime: 2023-05-26 15:20:41
+LastEditTime: 2023-09-09 15:15:12
 Copyright (c) 2022 by ziyang-W (ziyangw@yeah.net), All Rights Reserved. 
 '''
 
@@ -71,10 +71,10 @@ def cal_ttest_result(dataSet:pd.DataFrame, tcol:list, trow:list, showP=False, CL
                         beautyP = pvalue if pvalue < 0.001 else round(pvalue, 4)
                     else:
                         beautyP = 'p<0.001' if pvalue < 0.001 else round(pvalue, 4)
-                    tableDict[r+'-%s-%s-p' % (CLS, cls)] = beautyP
                     tableDict[r+'-%s-%s-t' % (CLS, cls)] = tvalue
-                    genDict[r+'-%s-%s-p' %(CLS, cls)] = tableDict[r+'-%s-%s-p' % (CLS, cls)]
+                    tableDict[r+'-%s-%s-p' % (CLS, cls)] = beautyP
                     genDict[r+'-%s-%s-t' %(CLS, cls)] = tableDict[r+'-%s-%s-t' % (CLS, cls)]
+                    genDict[r+'-%s-%s-p' %(CLS, cls)] = tableDict[r+'-%s-%s-p' % (CLS, cls)]
                 if general:
                     l.append(genDict)
                 else:
@@ -99,12 +99,12 @@ def cal_ttest_result(dataSet:pd.DataFrame, tcol:list, trow:list, showP=False, CL
                         beautyP = pvalue if pvalue < 0.001 else round(pvalue, 4)
                     else:
                         beautyP = 'p<0.001' if pvalue < 0.001 else round(pvalue, 4)
-                    tableDict[r+'-%s-%s-p' % (cls[0], cls[1])] = beautyP
                     tableDict[r+'-%s-%s-t' % (cls[0], cls[1])] = tvalue
-                    genDict[r+'-%s-%s-p' %
-                            (cls[0], cls[1])] = tableDict[r+'-%s-%s-p' % (cls[0], cls[1])]
+                    tableDict[r+'-%s-%s-p' % (cls[0], cls[1])] = beautyP
                     genDict[r+'-%s-%s-t' %
                             (cls[0], cls[1])] = tableDict[r+'-%s-%s-t' % (cls[0], cls[1])]
+                    genDict[r+'-%s-%s-p' %
+                            (cls[0], cls[1])] = tableDict[r+'-%s-%s-p' % (cls[0], cls[1])]
                 if general:
                     l.append(genDict)
                 else:
@@ -138,7 +138,8 @@ def cal_chi_result(dataSet:pd.DataFrame, tcol:list, trow:list, general=False, be
             tableDict = pd.crosstab(
                 spDF[tda], spDF[r], margins=True, margins_name='Total')
             percent = pd.crosstab(
-                spDF[tda], spDF[r], margins=True, normalize='index', margins_name='Total')
+                # spDF[tda], spDF[r], margins=True, normalize='index', margins_name='Total') # index横着求和，计算得到的是分间的百分比，无意义
+                spDF[tda], spDF[r], margins=True, normalize='columns', margins_name='Total') # columns竖着求和，计算得到的是分组内的百分比
 
             if fisher:
                 chi2 = round(stats.fisher_exact(tableDict.iloc[:-1,:-1])[0],2) #[1]:chi2,[2]:df
@@ -164,12 +165,12 @@ def cal_chi_result(dataSet:pd.DataFrame, tcol:list, trow:list, general=False, be
                 # 在为小表格添加一个新行
 #                 pd.concat([pd.DataFrame(['随便写点儿什么'],index=[tda],columns=['rp']), tableDict]).drop('rp',axis=1)
                 # 不能删掉赋值，不然pandas会默认将全部为空的行删掉
-                tableDict.loc[tda, r+'-p'] = beautyP
                 tableDict.loc[tda, r+'-chi'] = chi2
+                tableDict.loc[tda, r+'-p'] = beautyP
         
 
             if general:
-                genDF = pd.DataFrame([beautyP,chi2], index=[r+'-p',r+'-chi'], columns=[tda]).T
+                genDF = pd.DataFrame([chi2,beautyP], index=[r+'-chi',r+'-p'], columns=[tda]).T
                 l = pd.concat([l, genDF], axis=0)
             else:
                 l = pd.concat([l, tableDict], axis=0)
@@ -195,7 +196,7 @@ def cal_stratify_chi_result(dataSet,tcol,trow,stratify,fisher=False,general =Fal
         l=pd.DataFrame()
         for tda in trow:
             sTableDict = pd.crosstab(index=[spDF[stratify], spDF[tda]],columns = spDF[r],margins=True,margins_name='Total')
-            sPercent = pd.crosstab(index=[spDF[stratify], spDF[tda]],columns = spDF[r],margins=True,normalize='index',margins_name='Total')
+            sPercent = pd.crosstab(index=[spDF[stratify], spDF[tda]],columns = spDF[r],margins=True,normalize='columns',margins_name='Total')
             
 #             print(sTableDict.index)
             S=pd.DataFrame()
